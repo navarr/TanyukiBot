@@ -280,7 +280,7 @@ fs.readFile(`./tokens.${process.env.BOT_USER_ID}.json`, (error, data) => {
     if (error) {
         return;
     }
-    authProvider.addUserForToken(data, ['chat']).then(() => {
+    authProvider.addUserForToken(JSON.parse(data.toString()), ['chat']).then(() => {
         twitchIsAuthorized = true;
         postTwitchAuth();
     }).catch((e) => {
