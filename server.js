@@ -46,9 +46,11 @@ const postTwitchAuth = () => {
         channels: ['nyavarr'],
         commands: [
             // !so
-            createBotCommand('so', async (params, {broadcasterId, announce, reply}) => {
-                await shoutout(params[0], announce, reply, broadcasterId)
-
+            createBotCommand('so', async (params, {msg, broadcasterId, announce, reply, userId}) => {
+                if (msg.userInfo.isMod || msg.userInfo.isBroadcaster) {
+                    shoutout(params[0], announce, reply, broadcasterId)
+                }
+                // else do nothing, fail quietly
             }, {aliases: ['shoutout']}),
 
             // !lurk
