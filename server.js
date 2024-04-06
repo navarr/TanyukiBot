@@ -183,8 +183,17 @@ const postTwitchAuth = () => {
             // !quote
             createBotCommand('quote', async (params, {say, reply}) => {
                 if (params.length === 0) {
-                    // todo random quote
-                    reply('I can\'t do random quite yet...')
+                    try {
+                        const quote = await quoteDb.getRandom()
+                        if (quote) {
+                            reply(`Quote #${quote.getId()}: ${quote.getQuote()}`)
+                        } else {
+                            reply('There exist no quotes at all (probably)!')
+                        }
+                    } catch (error) {
+                        console.error(error)
+                        reply('Something went wrong. The error has been logged for Nyavarr')
+                    }
                     return
                 }
                 if (params.length > 1) {

@@ -42,6 +42,26 @@ class QuoteDatabase {
     }
 
     /**
+     * @returns {Promise<null|Quote>}
+     */
+    getRandom() {
+        const self = this;
+        return new Promise((resolve, reject) => {
+            self.database.get("SELECT id,quote FROM quotes ORDER BY RANDOM()", (error, row) => {
+                if (row) {
+                    return resolve(new Quote(row.id, row.quote))
+                }
+
+                if (error) {
+                    return reject(error)
+                } else {
+                    return resolve(null)
+                }
+            })
+        })
+    }
+
+    /**
      * @param {string} quote
      * @returns {Promise<null|Quote>} The Quote ID of the newly inserted quote
      */
