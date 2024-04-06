@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<style>
+    html { background: #111; color: #ddd; font-family: sans-serif; }
+    .loading { display: none; }
+</style>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<div class="loading" data-bind="css:{loading: !hasLoaded()}">
+    <!-- ko if: needsTwitchAuth -->
+    <p>Authentication:</p>
+    <p><a data-bind="attr:{href: generateAuthUrl()}">Authorize Twitch</a></p>
+    <!-- /ko -->
+    <p>Server Messages:</p>
+    <ul data-bind="foreach: messages">
+        <li data-bind="text: message"></li>
+    </ul>
+</div>
+<script type="text/javascript" src="bower_components/knockout/dist/knockout.js"></script>
+<script type="text/javascript" src="bower_components/socket.io/client-dist/socket.io.min.js"></script>
+<script>
+    function AuthAppViewModel() {
+        const viewModel = this
+        viewModel.hasLoaded = ko.observable(false)
+        viewModel.needsTwitchAuth = ko.observable(false)
+        viewModel.messages = ko.observableArray([])
+        viewModel.twitchClientId = ko.observable('')
+        viewModel.redirectPort = ko.observable('')
+        viewModel.initialize = function() {
+            viewModel.socket = io();
+            viewModel.socket.on('connect', () => { viewModel.messages.push('Connected to server') })
+            viewModel.socket.on('disconnect', () => { viewModel.messages.push('Disconnected from server') })
+            viewModel.socket.on('needsTwitchAuth', () => { viewModel.needsTwitchAuth(true) })
+            viewModel.socket.on('twitchAuthorized', () => {
+                viewModel.needsTwitchAuth(false)
+                viewModel.messages.push('Verified Twitch is Authorized')
+            })
+            viewModel.socket.on('twitchData', (data) => {
+                viewModel.twitchClientId(data.clientId)
+                viewModel.redirectPort(data.redirectPort)
+                viewModel.hasLoaded(true)
+            })
+            viewModel.socket.on('log', (data) => {
+                viewModel.messages.push(data.message)
+            })
+        }
+        viewModel.generateAuthUrl = ko.pureComputed(() => {
+            return `https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=${viewModel.twitchClientId()}&redirect_uri=http://localhost:${viewModel.redirectPort()}/auth&state=random&scope=moderation:read+moderator:manage:announcements+moderator:manage:chat_messages+moderator:read:chat_settings+moderator:manage:chat_settings+moderator:read:chatters+moderator:read:followers+moderator:read:shoutouts+moderator:manage:shoutouts+channel:bot+channel:moderate+chat:edit+chat:read+user:bot+user:read:chat+user:write:chat`
+        })
+    }
+
+    const viewModel = new AuthAppViewModel()
+    ko.applyBindings(viewModel)
+    viewModel.initialize()
+</script>

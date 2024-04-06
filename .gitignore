@@ -1,0 +1,5 @@
+.env
+tokens.*.json
+database.db
+node_modules/
+public/bower_components/
