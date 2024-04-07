@@ -1,22 +1,23 @@
-const {Database} = require("sqlite3");
-const {QuoteDatabase} = require("./quoteSystem");
+const {Database} = require("sqlite3")
+const {QuoteDatabase} = require("./quoteSystem")
 
-const {RefreshingAuthProvider, exchangeCode} = require("@twurple/auth");
-const {Bot, createBotCommand} = require("@twurple/easy-bot");
+const {RefreshingAuthProvider, exchangeCode} = require("@twurple/auth")
+const {Bot, createBotCommand} = require("@twurple/easy-bot")
+const {EventSubWsListener} = require("@twurple/eventsub-ws")
 const {PronounDatabase} = require("./pronounDatabase")
-const {ApiClient} = require("@twurple/api");
+const {ApiClient} = require("@twurple/api")
 const express = require('express')
 const {createServer} = require('http')
 const {Server} = require('socket.io')
 const moment = require('moment')
-const fs = require("node:fs");
+const fs = require("node:fs")
 const {CounterDatabase} = require('./counterSystem')
 import('node-fetch')
 
 require('dotenv').config()
 
-const clientId = process.env.TWITCH_CLIENT_ID;
-const clientSecret = process.env.TWITCH_CLIENT_SECRET;
+const clientId = process.env.TWITCH_CLIENT_ID
+const clientSecret = process.env.TWITCH_CLIENT_SECRET
 
 const authProvider = new RefreshingAuthProvider({clientId, clientSecret})
 authProvider.onRefresh(async (userId, newTokenData) => {
@@ -26,24 +27,26 @@ authProvider.onRefresh(async (userId, newTokenData) => {
         () => {
         }
     )
-});
+})
 const apiClient = new ApiClient({authProvider})
 
 const database = new Database('./database.db', (err) => {
-    if (err) throw err;
-});
+    if (err) throw err
+})
 
 const pronounProvider = new PronounDatabase()
 const counterDb = new CounterDatabase(database)
 const quoteDb = new QuoteDatabase(database)
 
-let twitchIsAuthorized = false;
+function convertMinutesToMilliseconds(minutes) {
+    return 1000 * 60 * minutes
+}
 
 const postTwitchAuth = () => {
     console.log('Twitch Authorized')
     const bot = new Bot({
         authProvider,
-        channels: ['nyavarr'],
+        channels: [process.env.TWITCH_CHANNEL_NAME],
         commands: [
             // !so
             createBotCommand('so', async (params, {msg, broadcasterId, announce, reply, userId}) => {
@@ -129,7 +132,7 @@ const postTwitchAuth = () => {
                     }
                     say(message)
                 }).catch((error) => {
-                    console.error(error);
+                    console.error(error)
                     reply('Something went wrong.  The error has been logged for Nyavarr')
                 })
             }),
@@ -160,7 +163,7 @@ const postTwitchAuth = () => {
             // !partner
             createBotCommand('partner', async (params, {userName, userDisplayName, say, reply}) => {
                 try {
-                    const result = await fetch(`https://blackglasses.co/comission-command/navarr/pokepicker.php?name=${userName}`);
+                    const result = await fetch(`https://blackglasses.co/comission-command/navarr/pokepicker.php?name=${userName}`)
                     const pokemon = await result.text()
                     reply(`Your partner Pokémon is... ${pokemon}`)
                 } catch (error) {
@@ -240,13 +243,13 @@ const postTwitchAuth = () => {
         const soUser = await apiClient.users.getUserByNameBatched(soUserName)
         if (soUser === null) {
             errorResponseFunction(`Could not find Twitch account with username "${soUserName}"`)
-            return;
+            return
         }
 
         const soChannel = await apiClient.channels.getChannelInfoById(soUser.id)
         soUserName = soUser.name
 
-        let pronoun;
+        let pronoun
         try {
             pronoun = await pronounProvider.getPronouns('twitch', soUserName)
         } catch (e) {
@@ -285,17 +288,89 @@ const postTwitchAuth = () => {
             broadcasterId
         )
     })
+
+        const twitchEventSubListener = new EventSubWsListener({apiClient})
+        twitchEventSubListener.start()
+
+        // Ad Break Starting
+        twitchEventSubListener.onChannelAdBreakBegin(process.env.TWITCH_CHANNEL_ID, (event) => {
+            const duration = moment.duration({s: event.durationSeconds}).humanize()
+            bot.announce(
+                process.env.TWITCH_CHANNEL_NAME,
+                `We're taking a quick ad break. These are scheduled to keep pre-rolls off. See you in ${duration}!`
+            )
+        })
+
+        // Stream Starting Announcement
+        twitchEventSubListener.onStreamOnline(process.env.TWITCH_CHANNEL_ID, async (event) => {
+            const game = (await event.getStream()).gameName
+            const title = (await event.getStream()).title
+            bot.announce(process.env.TWITCH_CHANNEL_NAME, `${event.broadcasterDisplayName} is now live streaming ${game}: ${title}`)
+        })
+
+        // Timers
+        const generalTimerMessages = [
+            'Did you know I have a throne?  I\'ve got neat and... interesting... things on there if you want to send me a gift!  https://throne.com/navarr',
+            'Join the discord for schedule updates and optional going-live notifications! https://discord.gg/W6g5r4Wf2E',
+            'Check out the TikTok for highlights you might have missed! https://tiktok.com/@nyavarr',
+            'Please help me out!  It\'s hard to clip interesting or amusing moments when I\'m in the action.  You don\'t even need to edit the video, just redeem "Clip It!" and the bot will take care of the rest',
+            'Do you like the stream?  Don\'t be so engrossed you forget to drop a follow!  It\'ll help you know about my upcoming streams.',
+            'I work hard to keep my Twitch Schedule up to date.  Take a look and see what the future holds: https://twitch.tv/nyavarr/schedule',
+        ]
+        let generalTimerInterval = null
+        /** @type {number} The index of the next message to send. */
+        let generalTimerIndex = 0
+        twitchEventSubListener.onStreamOnline(process.env.TWITCH_CHANNEL_ID, (event) => {
+            clearInterval(generalTimerInterval)
+            setInterval(
+                () => {
+                    let maxIndex = generalTimerMessages.length - 1
+                    if (generalTimerIndex > maxIndex) {
+                        generalTimerIndex = 0
+                    }
+                    bot.say(process.env.TWITCH_CHANNEL_NAME, generalTimerMessages[generalTimerIndex])
+                    generalTimerIndex++
+                },
+                convertMinutesToMilliseconds(10)
+            )
+        })
+        twitchEventSubListener.onStreamOffline(process.env.TWITCH_CHANNEL_ID, (event) => {
+            clearInterval(generalTimerInterval)
+        })
+}
+
+let isBotAuthorized = false
+let isOwnerAuthorized = false
+function startupAfterAuths() {
+    if (isBotAuthorized && isOwnerAuthorized) {
+        postTwitchAuth()
+    }
 }
 
 fs.readFile(`./tokens.${process.env.BOT_USER_ID}.json`, (error, data) => {
     if (error) {
-        return;
+        console.error('Reading auth file as bot', error)
+        return
     }
     authProvider.addUserForToken(JSON.parse(data.toString()), ['chat']).then(() => {
-        twitchIsAuthorized = true;
-        postTwitchAuth();
+        console.debug('Authorized as Bot')
+        isBotAuthorized = true
+        startupAfterAuths()
     }).catch((e) => {
-        console.error(e);
+        console.error('Authorizing as Bot', e)
+    })
+})
+fs.readFile(`./tokens.${process.env.TWITCH_CHANNEL_ID}.json`, (error, data) => {
+    if (error) {
+        console.error('Reading auth file as owner', error)
+        return
+    }
+    authProvider.addUserForToken(JSON.parse(data.toString())).then(() => {
+        console.debug('Authorized as Owner')
+        isOwnerAuthorized = true
+        startupAfterAuths()
+    }).catch((e) => {
+        console.error('Authorizing as Channel Owner', e)
     })
 })
 
@@ -305,29 +380,36 @@ const io = new Server(httpServer, {cors: {origin: '*'}})
 const port = process.env.HTTP_SERVER_PORT
 
 io.on('connection', (socket) => {
-    if (!twitchIsAuthorized) {
+    if (!isOwnerAuthorized || !isBotAuthorized) {
         socket.emit('twitchData', {clientId, redirectPort: port})
-        socket.emit('needsTwitchAuth');
+        socket.emit('needsTwitchAuth')
     }
 
 })
 
 app.get('/auth', async (req, res) => {
-    if (twitchIsAuthorized) {
+    if (isBotAuthorized && isOwnerAuthorized) {
         res.send('Error already authorized')
     } else if (req.query.code) {
-        twitchIsAuthorized = true;
-        const tokenData = await exchangeCode(clientId, clientSecret, req.query.code, `http://localhost:${port}/auth`);
-        await authProvider.addUserForToken(tokenData, ['chat']);
+        const tokenData = await exchangeCode(clientId, clientSecret, req.query.code, `http://localhost:${port}/auth`)
+        const userId = await authProvider.addUserForToken(tokenData)
         fs.writeFile(
-            `./tokens.${process.env.BOT_USER_ID}.json`,
+            `./tokens.${userId}.json`,
             JSON.stringify(tokenData, null, 4),
             () => {
             }
         )
-        io.sockets.emit('twitchAuthorized');
+        io.sockets.emit('twitchAuthorized')
         res.send('Success')
-        postTwitchAuth()
+        if (userId === process.env.BOT_USER_ID) {
+            isBotAuthorized = true
+            authProvider.addIntentsToUser(userId, ['chat'])
+            startupAfterAuths()
+        }
+        if (userId === process.env.TWITCH_CHANNEL_ID) {
+            isOwnerAuthorized = true
+            startupAfterAuths()
+        }
     } else {
         res.send('Error no code')
     }
