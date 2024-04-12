@@ -240,9 +240,9 @@ const postTwitchAuth = () => {
     })
 
     async function shoutout(soUserName, responseFunction, errorResponseFunction, broadcasterId) {
-        const soUser = await apiClient.users.getUserByNameBatched(soUserName)
+        const soUser = await apiClient.users.getUserByNameBatched(soUserName.toLowerCase())
         if (soUser === null) {
-            errorResponseFunction(`Could not find Twitch account with username "${soUserName}"`)
+            errorResponseFunction(`Could not find Twitch account with username "${soUserName.toLowerCase()}"`)
             return
         }
 
@@ -301,13 +301,6 @@ const postTwitchAuth = () => {
             )
         })
 
-        // Stream Starting Announcement
-        twitchEventSubListener.onStreamOnline(process.env.TWITCH_CHANNEL_ID, async (event) => {
-            const game = (await event.getStream()).gameName
-            const title = (await event.getStream()).title
-            bot.announce(process.env.TWITCH_CHANNEL_NAME, `${event.broadcasterDisplayName} is now live streaming ${game}: ${title}`)
-        })
-
         // Timers
         const generalTimerMessages = [
             'Did you know I have a throne?  I\'ve got neat and... interesting... things on there if you want to send me a gift!  https://throne.com/navarr',
@@ -320,9 +313,11 @@ const postTwitchAuth = () => {
         let generalTimerInterval = null
         /** @type {number} The index of the next message to send. */
         let generalTimerIndex = 0
-        twitchEventSubListener.onStreamOnline(process.env.TWITCH_CHANNEL_ID, (event) => {
+        twitchEventSubListener.onStreamOnline(process.env.TWITCH_CHANNEL_ID, async (event) => {
+            console.debug('onStreamOnline')
+            // Timed Messages
             clearInterval(generalTimerInterval)
-            setInterval(
+            generalTimerInterval = setInterval(
                 () => {
                     let maxIndex = generalTimerMessages.length - 1
                     if (generalTimerIndex > maxIndex) {
@@ -333,10 +328,25 @@ const postTwitchAuth = () => {
                 },
                 convertMinutesToMilliseconds(10)
             )
+            // Stream Starting Announcement
+            try {
+                const game = (await event.getStream()).gameName
+                const title = (await event.getStream()).title
+                bot.announce(process.env.TWITCH_CHANNEL_NAME, `${event.broadcasterDisplayName} is now live streaming ${game}: ${title}`)
+            } catch (e) {
+                console.error(e)
+            }
         })
+
         twitchEventSubListener.onStreamOffline(process.env.TWITCH_CHANNEL_ID, (event) => {
+            console.debug('onStreamOffline')
             clearInterval(generalTimerInterval)
         })
+
+    twitchEventSubListener.onChannelRaidFrom(process.env.TWITCH_CHANNEL_ID, (event) => {
+        console.debug('onChannelRaidTo')
+        bot.announce(process.env.TWITCH_CHANNEL_NAME, `${event.raidingBroadcasterDisplayName} has raided out to ${event.raidedBroadcasterDisplayName}!  Did you miss it?  Join at https://twitch.tv/${event.raidedBroadcasterName}`)
+    })
 }
 
 let isBotAuthorized = false
