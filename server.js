@@ -240,7 +240,13 @@ const postTwitchAuth = () => {
     })
 
     async function shoutout(soUserName, responseFunction, errorResponseFunction, broadcasterId) {
-        const soUser = await apiClient.users.getUserByNameBatched(soUserName.toLowerCase())
+        soUserName = soUserName.toLowerCase().replace('@', '')
+        let soUser
+        try {
+            soUser = await apiClient.users.getUserByNameBatched(soUserName)
+        } catch (e) {
+            soUser = null
+        }
         if (soUser === null) {
             errorResponseFunction(`Could not find Twitch account with username "${soUserName.toLowerCase()}"`)
             return
