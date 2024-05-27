@@ -30,6 +30,11 @@ class Counter {
         return this.value
     }
 
+    set(amount) {
+        this.value = amount;
+        return this.triggerUpdate();
+    }
+
     triggerUpdate() {
         const self = this;
         return new Promise((resolve, reject) => {
@@ -68,6 +73,19 @@ class CounterDatabase {
             try {
                 const counter = await self.getCounter(name)
                 await counter.addOne()
+                return resolve(counter)
+            } catch (e) {
+                return reject(e)
+            }
+        })
+    }
+
+    resetCounter(name) {
+        const self = this;
+        return new Promise(async (resolve, reject) => {
+            try {
+                const counter = await self.getCounter(name)
+                await counter.set(0)
                 return resolve(counter)
             } catch (e) {
                 return reject(e)

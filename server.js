@@ -38,6 +38,12 @@ const pronounProvider = new PronounDatabase()
 const counterDb = new CounterDatabase(database)
 const quoteDb = new QuoteDatabase(database)
 
+// Reset Daily Counters
+const resetDailyCounters = async () => {
+    await counterDb.resetCounter('cursesToday')
+}
+resetDailyCounters().finally(() => {})
+
 function convertMinutesToMilliseconds(minutes) {
     return 1000 * 60 * minutes
 }
@@ -153,7 +159,7 @@ const postTwitchAuth = () => {
                     const cursesToday = (await counterDb.incrementCounter('cursesToday')).get()
                     const allCurses = (await counterDb.incrementCounter('allCurses')).get()
 
-                    await say(`Quite the sailor's mouth, eh?  That's ${cursesToday} ${cursesToday === 1 ? 'curse' : 'curses'} today, and ${allCurses} since we started counting!`)
+                    await say(`Quite the sailor's mouth, eh?  That's ${cursesToday} ${cursesToday === 1 ? 'curse' : 'curses'} this stream and ${allCurses} since we started counting!`)
                 } catch (error) {
                     console.error(error)
                     await reply('Something went wrong. The error has been logged for Nyavarr')
@@ -182,6 +188,18 @@ const postTwitchAuth = () => {
                     reply('Something went wrong. The error has been logged for Nyavarr')
                 }
             }, {aliases: ['badbean']}),
+
+            // !notgirl
+            createBotCommand('notgirl', async (params, {say, reply}) => {
+                try {
+                    const notGirlCount = (await counterDb.incrementCounter('notgirl')).get()
+
+                    say(`Nyavarr has apparently been confused for a girl ${notGirlCount} times since we started counting`)
+                } catch (error) {
+                    console.error(error)
+                    reply('Something went wrong. The error has been logged for Nyavarr')
+                }
+            }, {aliases: ['notagirl', 'girl']}),
 
             // !quote
             createBotCommand('quote', async (params, {say, reply}) => {
@@ -236,6 +254,11 @@ const postTwitchAuth = () => {
                     reply('Something went wrong. The error has been logged for Nyavarr')
                 }
             }),
+
+            // !throne
+            createBotCommand('throne', async (params, {say, reply}) => {
+                say('Nyavarr has a throne including the ability to leave anonymous and surprise gifts. https://throne.me/navarr')
+            })
         ]
     })
 
@@ -315,6 +338,7 @@ const postTwitchAuth = () => {
             'Please help me out!  It\'s hard to clip interesting or amusing moments when I\'m in the action.  You don\'t even need to edit the video, just redeem "Clip It!" and the bot will take care of the rest',
             'Do you like the stream?  Don\'t be so engrossed you forget to drop a follow!  It\'ll help you know about my upcoming streams.',
             'I work hard to keep my Twitch Schedule up to date.  Take a look and see what the future holds: https://twitch.tv/nyavarr/schedule',
+            'We have MERCH!  Go check it out at https://shop.nyavarr.com/',
         ]
         let generalTimerInterval = null
         /** @type {number} The index of the next message to send. */
@@ -344,6 +368,8 @@ const postTwitchAuth = () => {
                     console.error('Recoverable Error', e)
                 }
             }, 500) // Wait a bit so Twitch will have getStream.  At least once getStream has been NULL
+
+            await resetDailyCounters()
         })
 
         twitchEventSubListener.onStreamOffline(process.env.TWITCH_CHANNEL_ID, (event) => {
