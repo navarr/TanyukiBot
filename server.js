@@ -42,7 +42,8 @@ const quoteDb = new QuoteDatabase(database)
 const resetDailyCounters = async () => {
     await counterDb.resetCounter('cursesToday')
 }
-resetDailyCounters().finally(() => {})
+resetDailyCounters().finally(() => {
+})
 
 function convertMinutesToMilliseconds(minutes) {
     return 1000 * 60 * minutes
@@ -323,65 +324,65 @@ const postTwitchAuth = () => {
         )
     })
 
-        const twitchEventSubListener = new EventSubWsListener({apiClient})
-        twitchEventSubListener.start()
+    const twitchEventSubListener = new EventSubWsListener({apiClient})
+    twitchEventSubListener.start()
 
-        // Ad Break Starting
-        twitchEventSubListener.onChannelAdBreakBegin(process.env.TWITCH_CHANNEL_ID, (event) => {
-            const duration = moment.duration({s: event.durationSeconds}).humanize()
-            bot.announce(
-                process.env.TWITCH_CHANNEL_NAME,
-                `We're taking a quick ad break. These are scheduled to keep pre-rolls off. See you in ${duration}!`
-            )
-        })
+    // Ad Break Starting
+    twitchEventSubListener.onChannelAdBreakBegin(process.env.TWITCH_CHANNEL_ID, (event) => {
+        const duration = moment.duration({s: event.durationSeconds}).humanize()
+        bot.announce(
+            process.env.TWITCH_CHANNEL_NAME,
+            `We're taking a quick ad break. These are scheduled to keep pre-rolls off. See you in ${duration}!`
+        )
+    })
 
-        // Timers
-        const generalTimerMessages = [
-            'Did you know I have a throne?  I\'ve got neat and... interesting... things on there if you want to send me a gift!  https://throne.com/navarr',
-            'Join the discord for schedule updates and optional going-live notifications! https://discord.gg/W6g5r4Wf2E',
-            'Check out the TikTok for highlights you might have missed! https://tiktok.com/@nyavarr',
-            'Please help me out!  It\'s hard to clip interesting or amusing moments when I\'m in the action.  You don\'t even need to edit the video, just redeem "Clip It!" and the bot will take care of the rest',
-            'Do you like the stream?  Don\'t be so engrossed you forget to drop a follow!  It\'ll help you know about my upcoming streams.',
-            'I work hard to keep my Twitch Schedule up to date.  Take a look and see what the future holds: https://twitch.tv/nyavarr/schedule',
-            'We have MERCH!  Go check it out at https://shop.nyavarr.com/',
-            'We\'re part of 🦇 CREATURE FEATURE 🦇 - An Aggressively Pro-LGBTQIA+ and Marginalized Peoples Safe Space. Learn more at https://twitter.com/CFeatureTTV'
-        ]
-        let generalTimerInterval = null
-        /** @type {number} The index of the next message to send. */
-        let generalTimerIndex = 0
-        twitchEventSubListener.onStreamOnline(process.env.TWITCH_CHANNEL_ID, async (event) => {
-            console.debug('onStreamOnline')
-            // Timed Messages
-            clearInterval(generalTimerInterval)
-            generalTimerInterval = setInterval(
-                () => {
-                    let maxIndex = generalTimerMessages.length - 1
-                    if (generalTimerIndex > maxIndex) {
-                        generalTimerIndex = 0
-                    }
-                    bot.say(process.env.TWITCH_CHANNEL_NAME, generalTimerMessages[generalTimerIndex])
-                    generalTimerIndex++
-                },
-                convertMinutesToMilliseconds(10)
-            )
-            // Stream Starting Announcement
-            setTimeout(async () => {
-                try {
-                    const game = (await event.getStream()).gameName
-                    const title = (await event.getStream()).title
-                    bot.announce(process.env.TWITCH_CHANNEL_NAME, `${event.broadcasterDisplayName} is now live streaming ${game}: ${title}`)
-                } catch (e) {
-                    console.error('Recoverable Error', e)
+    // Timers
+    const generalTimerMessages = [
+        'Did you know I have a throne?  I\'ve got neat and... interesting... things on there if you want to send me a gift!  https://throne.com/navarr',
+        'Join the discord for schedule updates and optional going-live notifications! https://discord.gg/W6g5r4Wf2E',
+        'Check out the TikTok for highlights you might have missed! https://tiktok.com/@nyavarr',
+        'Please help me out!  It\'s hard to clip interesting or amusing moments when I\'m in the action.  You don\'t even need to edit the video, just redeem "Clip It!" and the bot will take care of the rest',
+        'Do you like the stream?  Don\'t be so engrossed you forget to drop a follow!  It\'ll help you know about my upcoming streams.',
+        'I work hard to keep my Twitch Schedule up to date.  Take a look and see what the future holds: https://twitch.tv/nyavarr/schedule',
+        'We have MERCH!  Go check it out at https://shop.nyavarr.com/',
+        'We\'re part of 🦇 CREATURE FEATURE 🦇 - An Aggressively Pro-LGBTQIA+ and Marginalized Peoples Safe Space. Learn more at https://twitter.com/CFeatureTTV'
+    ]
+    let generalTimerInterval = null
+    /** @type {number} The index of the next message to send. */
+    let generalTimerIndex = 0
+    twitchEventSubListener.onStreamOnline(process.env.TWITCH_CHANNEL_ID, async (event) => {
+        console.debug('onStreamOnline')
+        // Timed Messages
+        clearInterval(generalTimerInterval)
+        generalTimerInterval = setInterval(
+            () => {
+                let maxIndex = generalTimerMessages.length - 1
+                if (generalTimerIndex > maxIndex) {
+                    generalTimerIndex = 0
                 }
-            }, 500) // Wait a bit so Twitch will have getStream.  At least once getStream has been NULL
+                bot.say(process.env.TWITCH_CHANNEL_NAME, generalTimerMessages[generalTimerIndex])
+                generalTimerIndex++
+            },
+            convertMinutesToMilliseconds(10)
+        )
+        // Stream Starting Announcement
+        setTimeout(async () => {
+            try {
+                const game = (await event.getStream()).gameName
+                const title = (await event.getStream()).title
+                bot.announce(process.env.TWITCH_CHANNEL_NAME, `${event.broadcasterDisplayName} is now live streaming ${game}: ${title}`)
+            } catch (e) {
+                console.error('Recoverable Error', e)
+            }
+        }, 500) // Wait a bit so Twitch will have getStream.  At least once getStream has been NULL
 
-            await resetDailyCounters()
-        })
+        await resetDailyCounters()
+    })
 
-        twitchEventSubListener.onStreamOffline(process.env.TWITCH_CHANNEL_ID, (event) => {
-            console.debug('onStreamOffline')
-            clearInterval(generalTimerInterval)
-        })
+    twitchEventSubListener.onStreamOffline(process.env.TWITCH_CHANNEL_ID, (event) => {
+        console.debug('onStreamOffline')
+        clearInterval(generalTimerInterval)
+    })
 
     twitchEventSubListener.onChannelRaidFrom(process.env.TWITCH_CHANNEL_ID, (event) => {
         console.debug('onChannelRaidTo')
@@ -391,6 +392,7 @@ const postTwitchAuth = () => {
 
 let isBotAuthorized = false
 let isOwnerAuthorized = false
+
 function startupAfterAuths() {
     if (isBotAuthorized && isOwnerAuthorized) {
         postTwitchAuth()
