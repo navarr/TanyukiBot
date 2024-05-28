@@ -98,6 +98,11 @@ const postTwitchAuth = () => {
                 say('Please, allow me to introduce you to the fine gentleman joining me on Thursdays: @npfund: Nick, an amazing colleague and coworker from a previous job.  @krabbby: Krabbby, a man of mystery who previously lead The Night\'s Watch (a MineZ Guild I founded)')
             }),
 
+            // !team
+            createBotCommand('team', (params, {say}) => {
+                say('We\'re part of 🦇 CREATURE FEATURE 🦇 - An Aggressively Pro-LGBTQIA+ and Marginalized Peoples Safe Space. Learn more at https://twitter.com/CFeatureTTV')
+            }, {aliases: ['creaturefeature', 'creatures']}),
+
             // !followage
             createBotCommand('followage', async (params, {broadcasterName, broadcasterId, userId, reply}) => {
                 apiClient.asUser(process.env.BOT_USER_ID, async ctx => {
@@ -339,6 +344,7 @@ const postTwitchAuth = () => {
             'Do you like the stream?  Don\'t be so engrossed you forget to drop a follow!  It\'ll help you know about my upcoming streams.',
             'I work hard to keep my Twitch Schedule up to date.  Take a look and see what the future holds: https://twitch.tv/nyavarr/schedule',
             'We have MERCH!  Go check it out at https://shop.nyavarr.com/',
+            'We\'re part of 🦇 CREATURE FEATURE 🦇 - An Aggressively Pro-LGBTQIA+ and Marginalized Peoples Safe Space. Learn more at https://twitter.com/CFeatureTTV'
         ]
         let generalTimerInterval = null
         /** @type {number} The index of the next message to send. */
