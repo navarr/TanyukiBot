@@ -242,7 +242,7 @@ const postTwitchAuth = () => {
             }),
 
             // !addquote
-            createBotCommand('addquote', async (params, {say, reply}) => {
+            createBotCommand('addquote', async (params, {reply}) => {
                 if (params.length === 0) {
                     reply('You uh.. forgot to include the quote.')
                     return
@@ -261,10 +261,22 @@ const postTwitchAuth = () => {
                 }
             }),
 
+            // createBotCommand('charity', async (params, {say}) => {
+            //     say('Support the Trevor Project with us but making your donation at https://tiltify.com/@navarr/shapeshifters-oct-2024')
+            // }, {aliases: ['donate', 'trevorproject', 'trevor']}),
+
+            createBotCommand('vrchat', async (params, {reply}) => {
+                reply('Join my VRChat group!  NYAVAR.2175 (or use the link) https://vrc.group/NYAVAR.2175')
+            }, {aliases: ['group']}),
+
             // !throne
             createBotCommand('throne', async (params, {say, reply}) => {
                 say('Nyavarr has a throne including the ability to leave anonymous and surprise gifts. https://throne.me/navarr')
-            })
+            }),
+
+            createBotCommand('credits', async (params, {reply}) => {
+                reply('You can find credits for everything used in stream at https://github.com/nyavarr/credits')
+            }, {aliases: ['credit']})
         ]
     })
 
@@ -344,7 +356,7 @@ const postTwitchAuth = () => {
         'Please help me out!  It\'s hard to clip interesting or amusing moments when I\'m in the action.  You don\'t even need to edit the video, just redeem "Clip It!" and the bot will take care of the rest',
         'Do you like the stream?  Don\'t be so engrossed you forget to drop a follow!  It\'ll help you know about my upcoming streams.',
         'I work hard to keep my Twitch Schedule up to date.  Take a look and see what the future holds: https://twitch.tv/nyavarr/schedule',
-        'We have MERCH!  Go check it out at https://shop.nyavarr.com/',
+        'ABWAH! We have MERCH!  Go check it out at https://shop.nyavarr.com/',
         'We\'re part of 🦇 CREATURE FEATURE 🦇 - An Aggressively Pro-LGBTQIA+ and Marginalized Peoples Safe Space. Learn more at https://twitter.com/CFeatureTTV'
     ]
     let generalTimerInterval = null
