@@ -372,6 +372,30 @@ const postTwitchAuth = () => {
                 console.error(error)
             })
         }
+        if (event.rewardTitle === 'Throw Something!') {
+            counterDb.incrementUserCounter('thrown', event.userId).then(() => {}).catch((error) => {
+                console.error(error)
+            })
+            counterDb.incrementCounter('thrown').then(() => {}).catch((error) => {
+                console.error(error)
+            })
+        }
+        if (event.rewardTitle === 'bonk') {
+            counterDb.incrementUserCounter('bonk', event.userId).then(() => {}).catch((error) => {
+                console.error(error)
+            })
+            counterDb.incrementCounter('bonk').then(() => {}).catch((error) => {
+                console.error(error)
+            })
+        }
+        if (event.rewardTitle === 'DEER!') {
+            counterDb.incrementUserCounter('deer', event.userId).then(() => {}).catch((error) => {
+                console.error(error)
+            })
+            counterDb.incrementCounter('deer').then(() => {}).catch((error) => {
+                console.error(error)
+            })
+        }
     })
 
     // Timers
