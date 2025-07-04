@@ -38,6 +38,10 @@ const pronounProvider = new PronounDatabase()
 const counterDb = new CounterDatabase(database)
 const quoteDb = new QuoteDatabase(database)
 
+// Configure moment
+moment.relativeTimeThreshold('y', 365);
+moment.relativeTimeThreshold('M', 12);
+
 // Reset Daily Counters
 const resetDailyCounters = async () => {
     await counterDb.resetCounter('cursesToday')
@@ -80,7 +84,7 @@ const postTwitchAuth = () => {
 
             // !raid
             createBotCommand('raid', (params, {say}) => {
-                say('Despite being the Eepiest nyavarEepy The FOXBOY RAID has arrived with PERKED EARS nyavarExcite AND PUFFY TAIL to chill in your lovely stream nyavarLoveL nyavarLoveR')
+                say('nyavarDance nyavarDance nyavarDance FOXBOY RAID nyavarDance nyavarDance nyavarDance  The fox and his eepy nyavarEepy companions have arrived with PERKED EARS and PUFFY TAIL to chill in your lovely stream nyavarHeart')
                 say('Despite being the Eepiest 😴 The FOXBOY RAID has arrived with PERKED EARS 🦊 AND PUFFY TAIL to chill in your lovely stream ❤️❤️')
             }, {aliases: ['raid']}),
 
@@ -276,7 +280,11 @@ const postTwitchAuth = () => {
 
             createBotCommand('credits', async (params, {reply}) => {
                 reply('You can find credits for everything used in stream at https://github.com/nyavarr/credits')
-            }, {aliases: ['credit']})
+            }, {aliases: ['credit']}),
+
+            createBotCommand('merch', async (params, {reply}) => {
+                reply('You\'re really considering buying some merch? nyavarShy You can find the storefront at https://shop.nyavarr.com/ - Post in the discord if you have more ideas!')
+            }, {aliases: ['shop', 'store']}),
         ]
     })
 
@@ -346,6 +354,24 @@ const postTwitchAuth = () => {
             process.env.TWITCH_CHANNEL_NAME,
             `We're taking a quick ad break. These are scheduled to keep pre-rolls off. See you in ${duration}!`
         )
+    })
+
+    twitchEventSubListener.onChannelRedemptionAdd(process.env.TWITCH_CHANNEL_ID, (event) => {
+        if (event.rewardTitle === 'Daily Treat') {
+            counterDb.incrementUserCounter('daily', event.userId).then((counter) => {
+                bot.say(process.env.TWITCH_CHANNEL_NAME, `@${event.userDisplayName} Here's your ${moment.localeData().ordinal(counter.get())} treat!  Thank you! nyavarHeart nyavarHeart nyavarHear`);
+            }).catch((error) => {
+                console.error(error)
+                bot.say(process.env.TWITCH_CHANNEL_NAME, 'Something went wrong redeeming your treat.  I\'m sorry nyavarTear');
+            })
+        }
+        if (event.rewardTitle === 'FIRST') {
+            counterDb.incrementUserCounter('first', event.userId).then((counter) => {
+                bot.say(process.env.TWITCH_CHANNEL_NAME, `nyavarDance nyavarDance nyavarDance ${event.userDisplayName} has gotten FIRST ${counter.get()} time${counter.get() > 1 ? 's' : ''}!`)
+            }).catch((error) => {
+                console.error(error)
+            })
+        }
     })
 
     // Timers

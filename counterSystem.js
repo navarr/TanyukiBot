@@ -55,6 +55,10 @@ class CounterDatabase {
         this.database = database;
     }
 
+    getUserCounterName(counterName, userId) {
+        return `peruser-${counterName}-${userId}`;
+    }
+
     createCounter(name) {
         const self = this;
         return new Promise((resolve, reject) => {
@@ -65,6 +69,10 @@ class CounterDatabase {
                 return resolve();
             });
         })
+    }
+
+    createUserCounter(counterName, userId) {
+        return this.createCounter(this.getUserCounterName(counterName, userId));
     }
 
     incrementCounter(name) {
@@ -78,6 +86,10 @@ class CounterDatabase {
                 return reject(e)
             }
         })
+    }
+
+    incrementUserCounter(counterName, userId) {
+        return this.incrementCounter(this.getUserCounterName(counterName, userId));
     }
 
     resetCounter(name) {
@@ -108,6 +120,10 @@ class CounterDatabase {
                 })
             });
         });
+    }
+
+    getUserCounter(counterName, userId) {
+        return this.getCounter(this.getUserCounterName(counterName, userId));
     }
 }
 

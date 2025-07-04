@@ -47,7 +47,7 @@
             return `https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=${viewModel.twitchClientId()}&redirect_uri=http://localhost:${viewModel.redirectPort()}/auth&state=random&scope=moderation:read+moderator:manage:announcements+moderator:manage:chat_messages+moderator:read:chat_settings+moderator:manage:chat_settings+moderator:read:chatters+moderator:read:followers+moderator:read:shoutouts+moderator:manage:shoutouts+channel:bot+channel:moderate+chat:edit+chat:read+user:bot+user:read:chat+user:write:chat`
         })
         viewModel.generateOwnerAuthUrl = ko.pureComputed(() => {
-            return `https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=${viewModel.twitchClientId()}&redirect_uri=http://localhost:${viewModel.redirectPort()}/auth&state=random2&scope=channel:read:ads`
+            return `https://id.twitch.tv/oauth2/authorize?response_type=code&client_id=${viewModel.twitchClientId()}&redirect_uri=http://localhost:${viewModel.redirectPort()}/auth&state=random2&scope=channel:read:ads+channel:read:redemptions+channel:manage:redemptions`
         })
     }
 
