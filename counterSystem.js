@@ -1,5 +1,9 @@
 const sqlite3 = require('sqlite3').verbose();
 
+/**
+ * @property value {int}
+ * @property name {string}
+ */
 class Counter {
     constructor(database, name, value) {
         this.database = database;
@@ -8,33 +12,57 @@ class Counter {
         this.value = value;
     }
 
+    /**
+     * @returns {Promise<Counter>}
+     */
     addOne() {
         return this.add(1);
     }
 
+    /**
+     * @param amount {int}
+     * @returns {Promise<Counter>}
+     */
     add(amount) {
         this.value += amount;
         return this.triggerUpdate()
     }
 
+    /**
+     * @returns {Promise<Counter>}
+     */
     subOne() {
         return this.subtract(1);
     }
 
+    /**
+     * @param amount {int}
+     * @returns {Promise<Counter>}
+     */
     subtract(amount) {
         this.value -= amount;
         return this.triggerUpdate()
     }
 
+    /**
+     * @returns {int}
+     */
     get() {
         return this.value
     }
 
+    /**
+     * @param amount {int}
+     * @returns {Promise<Counter>}
+     */
     set(amount) {
         this.value = amount;
         return this.triggerUpdate();
     }
 
+    /**
+     * @returns {Promise<Counter>}
+     */
     triggerUpdate() {
         const self = this;
         return new Promise((resolve, reject) => {
@@ -44,7 +72,7 @@ class Counter {
                 if (error) {
                     return reject(error.message);
                 }
-                return resolve();
+                return resolve(self);
             })
         })
     }
@@ -55,10 +83,19 @@ class CounterDatabase {
         this.database = database;
     }
 
+    /**
+     * @param counterName {string}
+     * @param userId {string}
+     * @returns {string}
+     */
     getUserCounterName(counterName, userId) {
         return `peruser-${counterName}-${userId}`;
     }
 
+    /**
+     * @param name {string}
+     * @returns {Promise<Counter>}
+     */
     createCounter(name) {
         const self = this;
         return new Promise((resolve, reject) => {
@@ -71,10 +108,19 @@ class CounterDatabase {
         })
     }
 
+    /**
+     * @param counterName {string}
+     * @param userId {string}
+     * @returns {Promise<Counter>}
+     */
     createUserCounter(counterName, userId) {
         return this.createCounter(this.getUserCounterName(counterName, userId));
     }
 
+    /**
+     * @param name {string}
+     * @returns {Promise<Counter>}
+     */
     incrementCounter(name) {
         const self = this;
         return new Promise(async (resolve, reject) => {
@@ -88,10 +134,18 @@ class CounterDatabase {
         })
     }
 
+    /**
+     * @param counterName {string}
+     * @param userId {string}
+     * @returns {Promise<Counter>}
+     */
     incrementUserCounter(counterName, userId) {
         return this.incrementCounter(this.getUserCounterName(counterName, userId));
     }
 
+    /**
+     * @returns {Promise<Counter>}
+     */
     resetCounter(name) {
         const self = this;
         return new Promise(async (resolve, reject) => {
@@ -105,6 +159,10 @@ class CounterDatabase {
         })
     }
 
+    /**
+     * @param name {string}
+     * @returns {Promise<Counter>}
+     */
     getCounter(name) {
         const self = this;
         return new Promise((resolve, reject) => {
@@ -122,6 +180,12 @@ class CounterDatabase {
         });
     }
 
+    /**
+     *
+     * @param counterName {string}
+     * @param userId {string}
+     * @returns {Promise<Counter>}
+     */
     getUserCounter(counterName, userId) {
         return this.getCounter(this.getUserCounterName(counterName, userId));
     }

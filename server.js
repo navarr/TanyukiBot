@@ -285,6 +285,69 @@ const postTwitchAuth = () => {
             createBotCommand('merch', async (params, {reply}) => {
                 reply('You\'re really considering buying some merch? nyavarShy You can find the storefront at https://shop.nyavarr.com/ - Post in the discord if you have more ideas!')
             }, {aliases: ['shop', 'store']}),
+
+            createBotCommand('bonkcount', async(params, {reply}) => {
+                const counterName = 'bonk';
+                Promise.all([
+                    counterDb.getCounter(counterName),
+                    counterDb.getUserCounter(counterName, params.userId)
+                ]).then(([allCounter, userCounter]) => {
+                    const allCount = allCounter.get();
+                    if (allCount === 0) {
+                        reply('Nyavarr has never been bonked.');
+                        return;
+                    }
+                    const userCount = userCounter.get();
+                    const allString = `Nyavarr has been bonked ${allCount} time${allCount > 1 ? 's' : ''}`;
+                    const userString = userCount > 0 ? `, ${userCount} of them by you!` : '!';
+                    reply(allString + userString);
+                }).catch((e) => {
+                    console.error(e);
+                    reply('I encountered an error grabbing the count.  Please try again later. The error has been logged.');
+                })
+            }),
+
+            createBotCommand('deercount', async(params, {reply, userId}) => {
+                const counterName = 'deer';
+                Promise.all([
+                    counterDb.getCounter(counterName),
+                    counterDb.getUserCounter(counterName, params.userId)
+                ]).then(([allCounter, userCounter]) => {
+                    const allCount = allCounter.get();
+                    if (allCount === 0) {
+                        reply('Nyavarr has never been turned into a deer.');
+                        return;
+                    }
+                    const userCount = userCounter.get();
+                    const allString = `Nyavarr has been turned into a deer ${allCount} time${allCount > 1 ? 's' : ''}`;
+                    const userString = userCount > 0 ? `, ${userCount} of them by you!` : '!';
+                    reply(allString + userString);
+                }).catch((e) => {
+                    console.error(e);
+                    reply('I encountered an error grabbing the count.  Please try again later. The error has been logged.');
+                })
+            }),
+
+            createBotCommand('thrown', async(params, {reply}) => {
+                const counterName = 'throw';
+                Promise.all([
+                    counterDb.getCounter(counterName),
+                    counterDb.getUserCounter(counterName, params.userId)
+                ]).then(([allCounter, userCounter]) => {
+                    const allCount = allCounter.get();
+                    if (allCount === 0) {
+                        reply('Nyavarr has never had anything thrown at them.');
+                        return;
+                    }
+                    const userCount = userCounter.get();
+                    const allString = `Nyavarr has had ${allCount} thing${allCount > 1 ? 's' : ''} thrown at him`;
+                    const userString = userCount > 0 ? `, ${userCount} of them by you!` : '!';
+                    reply(allString + userString);
+                }).catch((e) => {
+                    console.error(e);
+                    reply('I encountered an error grabbing the count.  Please try again later. The error has been logged.');
+                })
+            })
         ]
     })
 
