@@ -12,6 +12,7 @@ const {Server} = require('socket.io')
 const moment = require('moment')
 const fs = require("node:fs")
 const {CounterDatabase} = require('./counterSystem')
+const {FirstStreak} = require('./streakSystem')
 import('node-fetch')
 
 require('dotenv').config()
@@ -34,9 +35,41 @@ const database = new Database('./database.db', (err) => {
     if (err) throw err
 })
 
+/**
+ * @param min {int} Minimum number to return
+ * @param max {int} Maximum number to return
+ */
+const getRandomNumber = function(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+const getRandomArrayKey = function(arr) {
+    return Math.floor(Math.random() * arr.length);
+}
+
+const availableTreatsList = [
+    'Konpeito',
+    'Taiyaki',
+    'Mochi',
+    'Edamame',
+    'Karinto',
+    'Okonomiyaki',
+    'Takoyaki',
+    'Pocky',
+    'Kakigori',
+    'Onigiri',
+    'Senbei',
+    'Dango',
+    'Yakitori',
+    'Kenpi',
+];
+
+const availableTreatCount = {};
+
 const pronounProvider = new PronounDatabase()
 const counterDb = new CounterDatabase(database)
 const quoteDb = new QuoteDatabase(database)
+const streakDb = new FirstStreak(database, counterDb)
 
 // Configure moment
 moment.relativeTimeThreshold('y', 365);
@@ -421,16 +454,36 @@ const postTwitchAuth = () => {
 
     twitchEventSubListener.onChannelRedemptionAdd(process.env.TWITCH_CHANNEL_ID, (event) => {
         if (event.rewardTitle === 'Daily Treat') {
+            const treatKey = getRandomArrayKey(availableTreatsList),
+                treat = availableTreatsList[treatKey];
+
+            counterDb.incrementCounter('daily').then().catch((err) => console.error(err));
+            counterDb.incrementCounter(`daily-${treat}`).then().catch((err) => console.error(err));
+            counterDb.incrementUserCounter(`daily-${treat}`).then().catch((err) => console.error(err));
             counterDb.incrementUserCounter('daily', event.userId).then((counter) => {
-                bot.say(process.env.TWITCH_CHANNEL_NAME, `@${event.userDisplayName} Here's your ${moment.localeData().ordinal(counter.get())} treat!  Thank you! nyavarHeart nyavarHeart nyavarHear`);
+                bot.say(process.env.TWITCH_CHANNEL_NAME, `@${event.userDisplayName} Here's your ${moment.localeData().ordinal(counter.get())} treat - ${treat}!  Thank you! nyavarHeart nyavarHeart nyavarHeart`);
             }).catch((error) => {
                 console.error(error)
                 bot.say(process.env.TWITCH_CHANNEL_NAME, 'Something went wrong redeeming your treat.  I\'m sorry nyavarTear');
             })
         }
         if (event.rewardTitle === 'FIRST') {
-            counterDb.incrementUserCounter('first', event.userId).then((counter) => {
-                bot.say(process.env.TWITCH_CHANNEL_NAME, `nyavarDance nyavarDance nyavarDance ${event.userDisplayName} has gotten FIRST ${counter.get()} time${counter.get() > 1 ? 's' : ''}!`)
+            counterDb.incrementCounter('first').then().catch((err) => console.error(err));
+            Promise.all([
+                counterDb.incrementUserCounter('first', event.userId),
+                streakDb.claimFirst(event.userId)
+            ]).then(([userCounter, streakCounter]) => {
+                const unassembledText = [
+                    'nyavarDance nyavarDance nyavarDance',
+                    `${event.userDisplayName} has gotten FIRST ${userCounter.get()} time${userCounter.get() === 1 ? '' : 's'}!`
+                ];
+                if (streakCounter.get() > 1) {
+                    unassembledText.push(`(STREAK: x${streakCounter.get()}!)`);
+                }
+                bot.say(
+                    process.env.TWITCH_CHANNEL_NAME,
+                    unassembledText.join(' ')
+                )
             }).catch((error) => {
                 console.error(error)
             })
