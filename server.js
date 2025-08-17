@@ -12,7 +12,7 @@ const {Server} = require('socket.io')
 const moment = require('moment')
 const fs = require("node:fs")
 const {CounterDatabase} = require('./counterSystem')
-const {FirstStreak} = require('./streakSystem')
+const {FirstStreak, TreatStreakDb} = require('./streakSystem')
 import('node-fetch')
 
 require('dotenv').config()
@@ -70,6 +70,7 @@ const pronounProvider = new PronounDatabase()
 const counterDb = new CounterDatabase(database)
 const quoteDb = new QuoteDatabase(database)
 const streakDb = new FirstStreak(database, counterDb)
+const treatStreakDb = new TreatStreakDb(database, counterDb)
 
 // Configure moment
 moment.relativeTimeThreshold('y', 365);
@@ -454,6 +455,8 @@ const postTwitchAuth = () => {
 
     twitchEventSubListener.onChannelRedemptionAdd(process.env.TWITCH_CHANNEL_ID, (event) => {
         if (event.rewardTitle === 'Daily Treat') {
+            treatStreakDb._updateUserStreak(event.userId).then();
+
             const treatKey = getRandomArrayKey(availableTreatsList),
                 treat = availableTreatsList[treatKey];
 
@@ -530,6 +533,9 @@ const postTwitchAuth = () => {
     let generalTimerIndex = 0
     twitchEventSubListener.onStreamOnline(process.env.TWITCH_CHANNEL_ID, async (event) => {
         console.debug('onStreamOnline')
+
+        treatStreakDb.updateLastStream().then().catch((error) => {console.error(error)});
+
         // Timed Messages
         clearInterval(generalTimerInterval)
         generalTimerInterval = setInterval(
