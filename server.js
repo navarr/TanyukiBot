@@ -455,7 +455,7 @@ const postTwitchAuth = () => {
 
     twitchEventSubListener.onChannelRedemptionAdd(process.env.TWITCH_CHANNEL_ID, (event) => {
         if (event.rewardTitle === 'Daily Treat') {
-            treatStreakDb._updateUserStreak(event.userId).then();
+            treatStreakDb.updateUserStreak(event.userId).then();
 
             const treatKey = getRandomArrayKey(availableTreatsList),
                 treat = availableTreatsList[treatKey];
@@ -463,8 +463,19 @@ const postTwitchAuth = () => {
             counterDb.incrementCounter('daily').then().catch((err) => console.error(err));
             counterDb.incrementCounter(`daily-${treat}`).then().catch((err) => console.error(err));
             counterDb.incrementUserCounter(`daily-${treat}`).then().catch((err) => console.error(err));
-            counterDb.incrementUserCounter('daily', event.userId).then((counter) => {
-                bot.say(process.env.TWITCH_CHANNEL_NAME, `@${event.userDisplayName} Here's your ${moment.localeData().ordinal(counter.get())} treat - ${treat}!  Thank you! nyavarHeart nyavarHeart nyavarHeart`);
+            Promise.all([
+                counterDb.incrementUserCounter('daily', event.userId),
+                treatStreakDb.updateUserStreak(event.userId)
+            ]).then((counter, streakCounter) => {
+                const phrase = [
+                    `@${event.userDisplayName}`,
+                    `Here's your ${moment.localeData().ordinal(counter.get())} treat - ${treat}! Thank you!`,
+                ]
+                if (streakCounter.get() > 1) {
+                    phrase.push(`(STREAK x${streakCounter.get()})`)
+                }
+                phrase.push('nyavarHeart nyavarHeart nyavarHeart');
+                bot.say(process.env.TWITCH_CHANNEL_NAME, phrase.join(' '));
             }).catch((error) => {
                 console.error(error)
                 bot.say(process.env.TWITCH_CHANNEL_NAME, 'Something went wrong redeeming your treat.  I\'m sorry nyavarTear');

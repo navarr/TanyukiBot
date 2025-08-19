@@ -72,12 +72,18 @@ class TreatStreakDb {
     }
 
 
-    async _updateUserStreak(userId) {
-        // TODO
-        // get user's last treat streak stream
-        // check if it matches the last streak stream
-        // if it matches, increase user's treat streak counter by 1
-        // else, reset to 0
+    async updateUserStreak(userId) {
+        const userLastStream = await this.simpleState.get(this.VAR_RECENT_STREAM + '-' + userId);
+
+        const lastStream = await this._getLastStream();
+        let streakCounter = await this.counterDatabase.getUserCounter('streamStreak', userId);
+        if (lastStream === userLastStream) {
+            streakCounter = await streakCounter.addOne();
+        } else {
+            streakCounter = await streakCounter.set(1);
+        }
+
+        return streakCounter;
     }
 
     /**
@@ -115,11 +121,17 @@ class SimpleState {
         this.database = database;
     }
 
+    /**
+     * @param {string} varName
+     * @returns {Promise<string|null>}
+     */
     get(varName) {
         return new Promise((resolve, reject) => {
             this.database.get("SELECT value FROM simpleState WHERE varName=?", [varName], (row, err) => {
                 if (err) {
                     reject(err);
+                } else if (row === undefined) {
+                    resolve(null);
                 } else {
                     resolve(row['value']);
                 }
