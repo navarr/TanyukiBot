@@ -82,6 +82,7 @@ class TreatStreakDb {
         } else {
             streakCounter = await streakCounter.set(1);
         }
+        this.simpleState.set(this.VAR_RECENT_STREAM + '-' + userId, await this._getRecentStream()).then();
 
         return streakCounter;
     }
@@ -127,7 +128,8 @@ class SimpleState {
      */
     get(varName) {
         return new Promise((resolve, reject) => {
-            this.database.get("SELECT value FROM simpleState WHERE varName=?", [varName], (row, err) => {
+            this.database.get("SELECT value FROM simpleState WHERE varName=?", [varName], (err, row) => {
+                console.log('Simple State Get', row, err);
                 if (err) {
                     reject(err);
                 } else if (row === null || row === undefined) {
@@ -141,7 +143,7 @@ class SimpleState {
 
     set(varName, value) {
         return new Promise((resolve) => {
-            this.database.run("REPLACE INTO simpleState(varName, value) VALUES(?,?)", [varName, value], (res, err) => {
+            this.database.run("REPLACE INTO simpleState(varName, value) VALUES(?,?)", [varName, value], (err) => {
                 if (err) {
                     reject(err);
                 } else {
@@ -172,7 +174,6 @@ class FirstStreak {
     async claimFirst(userId) {
         const lastFirst = await this.getLastFirst();
         let counter;
-        console.debug('lastFirst, userId', lastFirst, userId);
         if (lastFirst === userId) {
             counter = await this.counterDatabase.incrementCounter('first-streak');
         } else {
