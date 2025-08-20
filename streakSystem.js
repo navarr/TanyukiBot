@@ -130,7 +130,7 @@ class SimpleState {
             this.database.get("SELECT value FROM simpleState WHERE varName=?", [varName], (row, err) => {
                 if (err) {
                     reject(err);
-                } else if (row === undefined) {
+                } else if (row === null || row === undefined) {
                     resolve(null);
                 } else {
                     resolve(row['value']);
