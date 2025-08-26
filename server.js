@@ -454,75 +454,96 @@ const postTwitchAuth = () => {
     })
 
     twitchEventSubListener.onChannelRedemptionAdd(process.env.TWITCH_CHANNEL_ID, (event) => {
-        if (event.rewardTitle === 'Daily Treat') {
-            const treatKey = getRandomArrayKey(availableTreatsList),
-                treat = availableTreatsList[treatKey];
+        try {
+            if (event.rewardTitle === 'Daily Treat') {
+                const treatKey = getRandomArrayKey(availableTreatsList),
+                    treat = availableTreatsList[treatKey];
 
-            counterDb.incrementCounter('daily').then().catch((err) => console.error(err));
-            counterDb.incrementCounter(`daily-${treat}`).then().catch((err) => console.error(err));
-            counterDb.incrementUserCounter(`daily-${treat}`, event.userId).then().catch((err) => console.error(err));
-            Promise.all([
-                counterDb.incrementUserCounter('daily', event.userId),
-                treatStreakDb.updateUserStreak(event.userId)
-            ]).then(([counter, streakCounter]) => {
-                const phrase = [
-                    `@${event.userDisplayName}`,
-                    `Here's your ${moment.localeData().ordinal(counter.get())} treat - ${treat}! Thank you!`,
-                ]
-                if (streakCounter.get() > 1) {
-                    phrase.push(`(STREAK x${streakCounter.get()})`)
-                }
-                phrase.push('nyavarHeart nyavarHeart nyavarHeart');
-                bot.say(process.env.TWITCH_CHANNEL_NAME, phrase.join(' '));
-            }).catch((error) => {
-                console.error('Error Returned: ', error)
-                bot.say(process.env.TWITCH_CHANNEL_NAME, 'Something went wrong redeeming your treat.  I\'m sorry nyavarTear');
-            })
-        }
-        if (event.rewardTitle === 'FIRST') {
-            counterDb.incrementCounter('first').then().catch((err) => console.error(err));
-            Promise.all([
-                counterDb.incrementUserCounter('first', event.userId),
-                streakDb.claimFirst(event.userId)
-            ]).then(([userCounter, streakCounter]) => {
-                const unassembledText = [
-                    'nyavarDance nyavarDance nyavarDance',
-                    `${event.userDisplayName} has gotten FIRST ${userCounter.get()} time${userCounter.get() === 1 ? '' : 's'}!`
-                ];
-                if (streakCounter.get() > 1) {
-                    unassembledText.push(`(STREAK: x${streakCounter.get()}!)`);
-                }
-                bot.say(
-                    process.env.TWITCH_CHANNEL_NAME,
-                    unassembledText.join(' ')
-                )
-            }).catch((error) => {
-                console.error(error)
-            })
-        }
-        if (event.rewardTitle === 'Throw Something!') {
-            counterDb.incrementUserCounter('thrown', event.userId).then(() => {}).catch((error) => {
-                console.error(error)
-            })
-            counterDb.incrementCounter('thrown').then(() => {}).catch((error) => {
-                console.error(error)
-            })
-        }
-        if (event.rewardTitle === 'bonk') {
-            counterDb.incrementUserCounter('bonk', event.userId).then(() => {}).catch((error) => {
-                console.error(error)
-            })
-            counterDb.incrementCounter('bonk').then(() => {}).catch((error) => {
-                console.error(error)
-            })
-        }
-        if (event.rewardTitle === 'DEER!') {
-            counterDb.incrementUserCounter('deer', event.userId).then(() => {}).catch((error) => {
-                console.error(error)
-            })
-            counterDb.incrementCounter('deer').then(() => {}).catch((error) => {
-                console.error(error)
-            })
+                counterDb.incrementCounter('daily').then().catch((err) => console.error(err));
+                counterDb.incrementCounter(`daily-${treat}`).then().catch((err) => console.error(err));
+                counterDb.incrementUserCounter(`daily-${treat}`, event.userId).then().catch((err) => console.error(err));
+                Promise.all([
+                    counterDb.incrementUserCounter('daily', event.userId),
+                    treatStreakDb.updateUserStreak(event.userId)
+                ]).then(([counter, streakCounter]) => {
+                    const phrase = [
+                        `@${event.userDisplayName}`,
+                        `Here's your ${moment.localeData().ordinal(counter.get())} treat - ${treat}! Thank you!`,
+                    ]
+                    if (streakCounter.get() > 1) {
+                        phrase.push(`(STREAK x${streakCounter.get()})`)
+                    } else if (treatStreakDb.getCanRepairStreak(event.userId)) {
+                        phrase.push(`(STREAK REPAIRABLE - Redeem "Repair Streak" to fix!)`)
+                    }
+                    phrase.push('nyavarHeart nyavarHeart nyavarHeart');
+                    bot.say(process.env.TWITCH_CHANNEL_NAME, phrase.join(' '));
+                }).catch((error) => {
+                    console.error('Error Returned: ', error)
+                    bot.say(process.env.TWITCH_CHANNEL_NAME, 'Something went wrong redeeming your treat.  I\'m sorry nyavarTear');
+                })
+            }
+            if (event.rewardTitle === "Repair Streak") {
+                treatStreakDb.repairStreak(event.userId).then((streakCounter) => {
+                    if (streakCounter === false) {
+                        bot.say(process.env.TWITCH_CHANNEL_NAME, 'Streak is not eligible for repair at this time.  Mods: Please refund the redeem');
+                    } else {
+                        bot.say(process.env.TWITCH_CHANNEL_NAME, `@${event.userDisplayName} your streak has been repaired!  Thank you for your ${streakCounter.get()} stream loyalty! nyavarHeart`);
+                    }
+                })
+            }
+            if (event.rewardTitle === 'FIRST') {
+                counterDb.incrementCounter('first').then().catch((err) => console.error(err));
+                Promise.all([
+                    counterDb.incrementUserCounter('first', event.userId),
+                    streakDb.claimFirst(event.userId)
+                ]).then(([userCounter, streakCounter]) => {
+                    const unassembledText = [
+                        'nyavarDance nyavarDance nyavarDance',
+                        `${event.userDisplayName} has gotten FIRST ${userCounter.get()} time${userCounter.get() === 1 ? '' : 's'}!`
+                    ];
+                    if (streakCounter.get() > 1) {
+                        unassembledText.push(`(STREAK: x${streakCounter.get()}!)`);
+                    }
+                    bot.say(
+                        process.env.TWITCH_CHANNEL_NAME,
+                        unassembledText.join(' ')
+                    )
+                }).catch((error) => {
+                    console.error(error)
+                })
+            }
+            if (event.rewardTitle === 'Throw Something!') {
+                counterDb.incrementUserCounter('thrown', event.userId).then(() => {
+                }).catch((error) => {
+                    console.error(error)
+                })
+                counterDb.incrementCounter('thrown').then(() => {
+                }).catch((error) => {
+                    console.error(error)
+                })
+            }
+            if (event.rewardTitle === 'bonk') {
+                counterDb.incrementUserCounter('bonk', event.userId).then(() => {
+                }).catch((error) => {
+                    console.error(error)
+                })
+                counterDb.incrementCounter('bonk').then(() => {
+                }).catch((error) => {
+                    console.error(error)
+                })
+            }
+            if (event.rewardTitle === 'DEER!') {
+                counterDb.incrementUserCounter('deer', event.userId).then(() => {
+                }).catch((error) => {
+                    console.error(error)
+                })
+                counterDb.incrementCounter('deer').then(() => {
+                }).catch((error) => {
+                    console.error(error)
+                })
+            }
+        } catch (e) {
+            console.error('Error Processing Reward Redeem', e);
         }
     })
 

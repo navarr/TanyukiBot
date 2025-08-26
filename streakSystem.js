@@ -17,8 +17,12 @@ class TreatStreakDb {
     constructor(database, counterDatabase) {
         this.VAR_LAST_STREAK_STREAM = 'lastStreakStream';
         this.VAR_RECENT_STREAM = 'mostRecentStream';
+        this.VAR_STREAK_REPAIR = 'streakRepairStream';
         this.simpleState = new SimpleState(database);
         this.counterDatabase = counterDatabase;
+        this.repairableStreaks = {
+
+        };
     }
 
     /**
@@ -27,9 +31,13 @@ class TreatStreakDb {
      * @returns {Promise<void>}
      */
     async updateLastStream() {
+        const streakRepair = await this._getLastStream();
         const previousStream = await this._getRecentStream();
         const rightNow = new Date();
         this.currentStream = this._formatDate(rightNow);
+        this.repairableStreaks = {
+
+        };
 
         if (previousStream === this.currentStream) {
             // some sort of restart event, don't update it!
@@ -37,6 +45,7 @@ class TreatStreakDb {
         }
 
         Promise.all([
+            this._setStreakRepair(streakRepair),
             this._setPreviousStream(previousStream),
             this._setRecentStream(this.currentStream)
         ]).then();
@@ -63,6 +72,15 @@ class TreatStreakDb {
     }
 
     /**
+     * @param date
+     * @returns {Promise<void>}
+     * @private
+     */
+    async _setStreakRepair(date) {
+        await this.simpleState.set(this.VAR_STREAK_REPAIR, date);
+    }
+
+    /**
      *
      * @returns {Promise<string>}
      * @private
@@ -75,8 +93,12 @@ class TreatStreakDb {
     async updateUserStreak(userId) {
         const userLastStream = await this.simpleState.get(this.VAR_RECENT_STREAM + '-' + userId);
 
+        const repairStream = await this._getRepairStream();
         const lastStream = await this._getLastStream();
         let streakCounter = await this.counterDatabase.getUserCounter('streamStreak', userId);
+        if (repairStream === userLastStream) {
+            this.repairableStreaks[userId] = streakCounter.get();
+        }
         if (lastStream === userLastStream) {
             streakCounter = await streakCounter.addOne();
         } else {
@@ -87,6 +109,22 @@ class TreatStreakDb {
         return streakCounter;
     }
 
+    getCanRepairStreak(userId) {
+        return this.repairableStreaks[userId] !== undefined;
+    }
+
+    /**
+     * @param userId
+     * @returns {Promise<Counter|false>}
+     */
+    async repairStreak(userId) {
+        if (!this.getCanRepairStreak(userId)) {
+            return false;
+        }
+        let streakCounter = await this.counterDatabase.getUserCounter('streamStreak', userId);
+        return streakCounter.set(this.repairableStreaks[userId] + 1);
+    }
+
     /**
      *
      * @returns {Promise<string>}
@@ -94,6 +132,14 @@ class TreatStreakDb {
      */
     async _getLastStream() {
         return await this.simpleState.get(this.VAR_LAST_STREAK_STREAM);
+    }
+
+    /**
+     * @returns {Promise<string|null>}
+     * @private
+     */
+    async _getRepairStream() {
+        return await this.simpleState.get(this.VAR_STREAK_REPAIR);
     }
 
     /**
