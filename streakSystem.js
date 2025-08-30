@@ -175,7 +175,6 @@ class SimpleState {
     get(varName) {
         return new Promise((resolve, reject) => {
             this.database.get("SELECT value FROM simpleState WHERE varName=?", [varName], (err, row) => {
-                console.log('Simple State Get', row, err);
                 if (err) {
                     reject(err);
                 } else if (row === null || row === undefined) {
