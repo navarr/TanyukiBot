@@ -482,7 +482,7 @@ const postTwitchAuth = () => {
                     bot.say(process.env.TWITCH_CHANNEL_NAME, 'Something went wrong redeeming your treat.  I\'m sorry nyavarTear');
                 })
             }
-            if (event.rewardTitle === "Repair Streak") {
+            if (event.rewardTitle === "Streak Repair") {
                 treatStreakDb.repairStreak(event.userId).then((streakCounter) => {
                     if (streakCounter === false) {
                         bot.say(process.env.TWITCH_CHANNEL_NAME, 'Streak is not eligible for repair at this time.  Mods: Please refund the redeem');
