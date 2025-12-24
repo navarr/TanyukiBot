@@ -300,8 +300,8 @@ const postTwitchAuth = () => {
             }),
 
             // createBotCommand('charity', async (params, {say}) => {
-            //     say('Support the Trevor Project with us but making your donation at https://tiltify.com/@navarr/shapeshifters-oct-2024')
-            // }, {aliases: ['donate', 'trevorproject', 'trevor']}),
+            //     say('Support Stream for a Cause with us at https://charity.nyavarr.com/')
+            // }, {aliases: ['donate', 'trevorproject', 'trevor', 'sfac', 'fnof']}),
 
             createBotCommand('vrchat', async (params, {reply}) => {
                 reply('Join my VRChat group!  NYAVAR.2175 (or use the link) https://vrc.group/NYAVAR.2175')
@@ -432,13 +432,13 @@ const postTwitchAuth = () => {
         shoutout(
             userName,
             (message) => {
-                bot.announce(broadcasterName, message)
+                bot.announce(broadcasterName, message).then();
             },
             (message) => {
-                bot.say(broadcasterName, `${message} (This.. shouldn't be possible)`)
+                bot.say(broadcasterName, `${message} (This.. shouldn't be possible)`, {}).then();
             },
             broadcasterId
-        )
+        ).then()
     })
 
     const twitchEventSubListener = new EventSubWsListener({apiClient})
@@ -450,7 +450,7 @@ const postTwitchAuth = () => {
         bot.announce(
             process.env.TWITCH_CHANNEL_NAME,
             `We're taking a quick ad break. These are scheduled to keep pre-rolls off. See you in ${duration}!`
-        )
+        ).then()
     })
 
     twitchEventSubListener.onChannelRedemptionAdd(process.env.TWITCH_CHANNEL_ID, (event) => {
@@ -472,22 +472,28 @@ const postTwitchAuth = () => {
                     ]
                     if (streakCounter.get() > 1) {
                         phrase.push(`(STREAK x${streakCounter.get()})`)
-                    } else if (treatStreakDb.getCanRepairStreak(event.userId)) {
-                        phrase.push(`(STREAK REPAIRABLE - Redeem "Repair Streak" to fix!)`)
                     }
                     phrase.push('nyavarHeart nyavarHeart nyavarHeart');
                     bot.say(process.env.TWITCH_CHANNEL_NAME, phrase.join(' '));
                 }).catch((error) => {
                     console.error('Error Returned: ', error)
                     bot.say(process.env.TWITCH_CHANNEL_NAME, 'Something went wrong redeeming your treat.  I\'m sorry nyavarTear');
-                })
+                });
+
+                if (treatStreakDb.getStreakIfRepaired(event.userId)) {
+                    const phrase = [
+                        `@${event.userDisplayName}`,
+                        `nyavarBehave Your streak is broken, but if you redeem "Streak Repair" we'll restore it to a x${treatStreakDb.getStreakIfRepaired(event.userId)} streak nyavarThinking`
+                    ];
+                    bot.say(process.env.TWITCH_CHANNEL_NAME, phrase.join(' '));
+                }
             }
             if (event.rewardTitle === "Streak Repair") {
                 treatStreakDb.repairStreak(event.userId).then((streakCounter) => {
                     if (streakCounter === false) {
                         bot.say(process.env.TWITCH_CHANNEL_NAME, 'Streak is not eligible for repair at this time.  Mods: Please refund the redeem');
                     } else {
-                        bot.say(process.env.TWITCH_CHANNEL_NAME, `@${event.userDisplayName} your streak has been repaired!  Thank you for your ${streakCounter.get()} stream loyalty! nyavarHeart`);
+                        bot.say(process.env.TWITCH_CHANNEL_NAME, `@${event.userDisplayName} your streak has been repaired! nyavarHeadpats Thank you for your ${streakCounter.get()} stream loyalty! nyavarHeart`);
                     }
                 })
             }
@@ -552,11 +558,12 @@ const postTwitchAuth = () => {
         'Did you know I have a throne?  I\'ve got neat and... interesting... things on there if you want to send me a gift!  https://throne.com/navarr',
         'Join the discord for schedule updates and optional going-live notifications! https://discord.gg/W6g5r4Wf2E',
         'Check out the TikTok for highlights you might have missed! https://tiktok.com/@nyavarr',
-        'Please help me out!  It\'s hard to clip interesting or amusing moments when I\'m in the action.  You don\'t even need to edit the video, just redeem "Clip It!" and the bot will take care of the rest',
+        'Please help me out!  It\'s hard to clip interesting or amusing moments when I\'m in the action, press the Clip button to start a clip!',
         'Do you like the stream?  Don\'t be so engrossed you forget to drop a follow!  It\'ll help you know about my upcoming streams.',
         'I work hard to keep my Twitch Schedule up to date.  Take a look and see what the future holds: https://twitch.tv/nyavarr/schedule',
         'ABWAH! We have MERCH!  Go check it out at https://shop.nyavarr.com/',
-        'We\'re part of 🦇 CREATURE FEATURE 🦇 - An Aggressively Pro-LGBTQIA+ and Marginalized Peoples Safe Space. Learn more at https://twitter.com/CFeatureTTV'
+        'We\'re part of 🦇 CREATURE FEATURE 🦇 - An Aggressively Pro-LGBTQIA+ and Marginalized Peoples Safe Space. Learn more at https://twitter.com/CFeatureTTV',
+        // 'This month we\'re supporting STREAM FOR A CAUSE!  Donate to them at https://charity.nyavarr.com/'
     ]
     let generalTimerInterval = null
     /** @type {number} The index of the next message to send. */

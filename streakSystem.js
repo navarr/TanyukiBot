@@ -101,7 +101,7 @@ class TreatStreakDb {
         }
         if (lastStream === userLastStream) {
             streakCounter = await streakCounter.addOne();
-        } else {
+        } else if (userLastStream !== this.currentStream) {
             streakCounter = await streakCounter.set(1);
         }
         this.simpleState.set(this.VAR_RECENT_STREAM + '-' + userId, await this._getRecentStream()).then();
@@ -123,6 +123,13 @@ class TreatStreakDb {
         }
         let streakCounter = await this.counterDatabase.getUserCounter('streamStreak', userId);
         return streakCounter.set(this.repairableStreaks[userId] + 1);
+    }
+
+    getStreakIfRepaired(userId) {
+        if (!this.getCanRepairStreak(userId)) {
+            return false;
+        }
+        return this.repairableStreaks[userId] + 1;
     }
 
     /**
