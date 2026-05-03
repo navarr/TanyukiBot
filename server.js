@@ -134,7 +134,7 @@ const postTwitchAuth = () => {
 
             // !theguys
             createBotCommand('theguys', (params, {say}) => {
-                say('Please, allow me to introduce you to the fine gentleman joining me on Thursdays: @npfund: Nick, an amazing colleague and coworker from a previous job.  @krabbby: Krabbby, a man of mystery who previously lead The Night\'s Watch (a MineZ Guild I founded)')
+                say('Please, allow me to introduce you to the fine gentleman joining me on Thursdays: @npfund: Nick, an amazing colleague and coworker from a previous job.  @krabbby: Krabbby, a man of mystery who previously lead The Night\'s Watch (a MineZ Guild I founded) and @JediMasterGio: David, another amazing colleague and coworker from a previous job.')
             }),
 
             // !team
@@ -184,6 +184,24 @@ const postTwitchAuth = () => {
                 }).catch((error) => {
                     console.error(error)
                     reply('Something went wrong.  The error has been logged for Nyavarr')
+                })
+            }),
+
+            createBotCommand('bless', async (params, {say, reply}) => {
+                counterDb.incrementCounter('sneeze').then((counter) => {
+                    say(`Bless you!  You must be a mess, sneezing ${counter.get()} times...`)
+                }).catch((err) => {
+                    console.error(err);
+                    reply('Something went wrong. The error has been logged for Nyavarr');
+                });
+            }, {aliases: ['blessyou', 'sneeze']}),
+
+            createBotCommand('deer', async (params, {say, reply}) => {
+                counterDb.incrementCounter('calleddeer').then((counter) => {
+                    say(`Look what you've all done!  Nyavarr has been confused for a deer ${counter.get()} times!`)
+                }).catch((err) => {
+                    console.error(err);
+                    reply('Something went wrong. The error has been logged for Nyavarr');
                 })
             }),
 
@@ -381,7 +399,36 @@ const postTwitchAuth = () => {
                     console.error(e);
                     reply('I encountered an error grabbing the count.  Please try again later. The error has been logged.');
                 })
-            })
+            }),
+
+            createBotCommand('treats', async(params, {reply}) => {
+                const counterName = 'daily';
+                Promise.all([
+                    counterDb.getCounter(counterName),
+                    counterDb.getUserCounter(counterName, params.userId)
+                ]).then(([allCounter, userCounter]) => {
+                    const allCount = allCounter.get();
+                    if (allCount === 0) {
+                        reply('Nobody has ever redeemed a daily treat nyavarTear');
+                        return;
+                    }
+                    const userCount = userCounter.get();
+                    const allString = `${allCount} treat${allCount > 1 ? 's': ''} have been given out`;
+                    const userString = userCount > 0 ? `, ${userCount} of them to you!` : '!';
+                    reply(allString + userString);
+                }).catch((e) => {
+                    console.error(e);
+                    reply('I encountered an error grabbing the count. Please try again later. The error has been logged.');
+                })
+            }),
+
+            createBotCommand('kofi', async(params, {reply}) => {
+                reply('You can contribute via ko-fi at https://ko-fi.com/nyavarr - every little bit helps and I appreciate it!')
+            }, {aliases: ['ko-fi', 'tip']}),
+
+            createBotCommand('subathon', async(params, {reply}) => {
+                reply('Every $6 is 10 minutes on the clock, for a maximum 24 hours!  2x bonus for Ko-Fi (!kofi) contributions and twitch bits!')
+            }, {aliases: ['donothon', 'contribute']})
         ]
     })
 
@@ -475,18 +522,19 @@ const postTwitchAuth = () => {
                     }
                     phrase.push('nyavarHeart nyavarHeart nyavarHeart');
                     bot.say(process.env.TWITCH_CHANNEL_NAME, phrase.join(' '));
+
+                    if (treatStreakDb.getStreakIfRepaired(event.userId)) {
+                        const phrase = [
+                            `@${event.userDisplayName}`,
+                            `nyavarBehave Your streak is broken, but if you redeem "Streak Repair" we'll restore it to a x${treatStreakDb.getStreakIfRepaired(event.userId)} streak nyavarThinking`
+                        ];
+                        bot.say(process.env.TWITCH_CHANNEL_NAME, phrase.join(' '));
+                    }
+
                 }).catch((error) => {
                     console.error('Error Returned: ', error)
                     bot.say(process.env.TWITCH_CHANNEL_NAME, 'Something went wrong redeeming your treat.  I\'m sorry nyavarTear');
                 });
-
-                if (treatStreakDb.getStreakIfRepaired(event.userId)) {
-                    const phrase = [
-                        `@${event.userDisplayName}`,
-                        `nyavarBehave Your streak is broken, but if you redeem "Streak Repair" we'll restore it to a x${treatStreakDb.getStreakIfRepaired(event.userId)} streak nyavarThinking`
-                    ];
-                    bot.say(process.env.TWITCH_CHANNEL_NAME, phrase.join(' '));
-                }
             }
             if (event.rewardTitle === "Streak Repair") {
                 treatStreakDb.repairStreak(event.userId).then((streakCounter) => {
@@ -576,12 +624,24 @@ const postTwitchAuth = () => {
         // Timed Messages
         clearInterval(generalTimerInterval)
         generalTimerInterval = setInterval(
-            () => {
+            async () => {
                 let maxIndex = generalTimerMessages.length - 1
                 if (generalTimerIndex > maxIndex) {
                     generalTimerIndex = 0
                 }
-                bot.say(process.env.TWITCH_CHANNEL_NAME, generalTimerMessages[generalTimerIndex])
+                apiClient.asUser(process.env.BOT_USER_ID, async ctx => {
+                    try {
+                        await ctx.chat.sendChatMessageAsApp(
+                            process.env.BOT_USER_ID,
+                            process.env.TWITCH_CHANNEL_ID,
+                            generalTimerMessages[generalTimerIndex],
+                            {forSourceOnly: true}
+                        );
+                    } catch (e) {
+                        console.error(e);
+                        bot.say(process.env.TWITCH_CHANNEL_NAME, generalTimerMessages[generalTimerIndex])
+                    }
+                })
                 generalTimerIndex++
             },
             convertMinutesToMilliseconds(10)
