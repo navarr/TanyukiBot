@@ -692,17 +692,23 @@ const postTwitchAuth = () => {
             },
             convertMinutesToMilliseconds(10)
         )
-        // Stream Starting Announcement
-        setTimeout(async () => {
+
+        const announceStream = async () => {
+            const stream = await event.getStream();
+            if (stream === null) {
+                setTimeout(announceStream, 500);
+                return;
+            }
             try {
                 const game = (await event.getStream()).gameName
                 const title = (await event.getStream()).title
-                bot.announce(process.env.TWITCH_CHANNEL_NAME, `${event.broadcasterDisplayName} is now live streaming ${game}: ${title}`)
+                await bot.announce(process.env.TWITCH_CHANNEL_NAME, `${event.broadcasterDisplayName} is now live streaming ${game}: ${title}`);
             } catch (e) {
                 console.error('Recoverable Error', e)
             }
-        }, 500) // Wait a bit so Twitch will have getStream.  At least once getStream has been NULL
+        };
 
+        announceStream().then();
         await resetDailyCounters()
     })
 
