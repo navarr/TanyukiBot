@@ -13,6 +13,7 @@ const moment = require('moment')
 const fs = require("node:fs")
 const {CounterDatabase} = require('./counterSystem')
 const {FirstStreak, TreatStreakDb} = require('./streakSystem')
+const {ChatMessage} = require("@twurple/chat");
 import('node-fetch')
 
 require('dotenv').config()
@@ -87,6 +88,23 @@ function convertMinutesToMilliseconds(minutes) {
     return 1000 * 60 * minutes
 }
 
+/**
+ * @param {ChatMessage} msg
+ * @return {boolean}
+ */
+function canIncrementCounter(msg) {
+    return msg.userInfo.isMod || msg.userInfo.isVip || msg.userInfo.isBroadcaster || msg.userInfo.isLeadMod;
+}
+
+/**
+ *
+ * @param {ChatMessage} msg
+ * @returns {boolean}
+ */
+function canPerformModAction(msg) {
+    return msg.userInfo.isMod || msg.userInfo.isBroadcaster || msg.userInfo.isLeadMod;
+}
+
 const postTwitchAuth = () => {
     console.log('Twitch Authorized')
     const bot = new Bot({
@@ -95,51 +113,51 @@ const postTwitchAuth = () => {
         commands: [
             // !so
             createBotCommand('so', async (params, {msg, broadcasterId, announce, reply, userId}) => {
-                if (msg.userInfo.isMod || msg.userInfo.isBroadcaster) {
-                    shoutout(params[0], announce, reply, broadcasterId)
+                if (canPerformModAction(msg)) {
+                    shoutout(params[0], announce, reply, broadcasterId).then();
                 }
                 // else do nothing, fail quietly
             }, {aliases: ['shoutout']}),
 
             // !lurk
             createBotCommand('lurk', (params, {reply, userDisplayName}) => {
-                reply(`We are the watchers! Or the chrome-tab-muters because we have important things to do.  Either way, we appreciate you ${userDisplayName}.`)
+                reply(`We are the watchers! Or the chrome-tab-muters because we have important things to do.  Either way, we appreciate you ${userDisplayName}.`).then();
             }),
 
             // !discord
             createBotCommand('discord', (params, {say}) => {
-                say('Join our Discord for news about the stream!  https://discord.gg/W6g5r4Wf2E')
+                say('Join our Discord for news about the stream!  https://discord.gg/W6g5r4Wf2E').then();
             }),
 
             // !pronouns
             createBotCommand('pronouns', (params, {say}) => {
-                say('Nyavarr uses he or they pronouns.  K uses she/her pronouns.  To get your pronouns in chat, use https://chrome.google.com/webstore/detail/twitch-chat-pronouns/agnfbjmjkdncblnkpkgoefbpogemfcii')
+                say('Nyavarr uses he or they pronouns.  K uses she/her pronouns.  To get your pronouns in chat, use https://chrome.google.com/webstore/detail/twitch-chat-pronouns/agnfbjmjkdncblnkpkgoefbpogemfcii').then();
             }, {aliases: ['pronoun']}),
 
             // !raid
             createBotCommand('raid', (params, {say}) => {
-                say('nyavarDance nyavarDance nyavarDance FOXBOY RAID nyavarDance nyavarDance nyavarDance  The fox and his eepy nyavarEepy companions have arrived with PERKED EARS and PUFFY TAIL to chill in your lovely stream nyavarHeart')
-                say('Despite being the Eepiest 😴 The FOXBOY RAID has arrived with PERKED EARS 🦊 AND PUFFY TAIL to chill in your lovely stream ❤️❤️')
+                say('nyavarDance nyavarDance nyavarDance FOXBOY RAID nyavarDance nyavarDance nyavarDance  The fox and his eepy nyavarEepy companions have arrived with PERKED EARS and PUFFY TAIL to chill in your lovely stream nyavarHeart').then();
+                say('Despite being the Eepiest 😴 The FOXBOY RAID has arrived with PERKED EARS 🦊 AND PUFFY TAIL to chill in your lovely stream ❤️❤️').then();
             }, {aliases: ['raid']}),
 
             // !socials
             createBotCommand('socials', (params, {say}) => {
-                say('Follow me at: Discord: https://discord.gg/W6g5r4Wf2E | VODs, Clips, and More: https://linktr.ee/NavarrVT')
+                say('Follow me at: Discord: https://discord.gg/W6g5r4Wf2E | VODs, Clips, and More: https://linktr.ee/NavarrVT').then();
             }, {aliases: ['social']}),
 
             // !foxtail
             createBotCommand('foxtail', (params, {say}) => {
-                say('Our goal is now in the form of FOX TAILS!  Support the stream and help achieve the goal by subbing or gifting a sub (T1=1 tail, T2=2 tails, T3=6 tails) or with bits (250 = 1 tail) or TikTok coins (500 = 1 tail)!')
+                say('Our goal is now in the form of FOX TAILS!  Support the stream and help achieve the goal by subbing or gifting a sub (T1=1 tail, T2=2 tails, T3=6 tails) or with bits (250 = 1 tail) or TikTok coins (500 = 1 tail)!').then();
             }, {aliases: ['foxtails']}),
 
             // !theguys
             createBotCommand('theguys', (params, {say}) => {
-                say('Please, allow me to introduce you to the fine gentleman joining me on Thursdays: @npfund: Nick, an amazing colleague and coworker from a previous job.  @krabbby: Krabbby, a man of mystery who previously lead The Night\'s Watch (a MineZ Guild I founded) and @JediMasterGio: David, another amazing colleague and coworker from a previous job.')
+                say('Please, allow me to introduce you to the fine gentleman joining me on Thursdays: @npfund: Nick, an amazing colleague and coworker from a previous job.  @krabbby: Krabbby, a man of mystery who previously lead The Night\'s Watch (a MineZ Guild I founded) and @JediMasterGio: David, another amazing colleague and coworker from a previous job.').then();
             }),
 
             // !team
             createBotCommand('team', (params, {say}) => {
-                say('We\'re part of 🦇 CREATURE FEATURE 🦇 - An Aggressively Pro-LGBTQIA+ and Marginalized Peoples Safe Space. Learn more at https://twitter.com/CFeatureTTV')
+                say('We\'re part of 🦇 CREATURE FEATURE 🦇 - An Aggressively Pro-LGBTQIA+ and Marginalized Peoples Safe Space. Learn more at https://twitter.com/CFeatureTTV').then();
             }, {aliases: ['creaturefeature', 'creatures']}),
 
             // !followage
@@ -149,9 +167,9 @@ const postTwitchAuth = () => {
                     if (follow) {
                         const since = moment(follow.followDate)
                         const duration = moment.duration(moment().diff(since)).humanize()
-                        reply(`You have been following ${broadcasterName} for ${duration}!`)
+                        reply(`You have been following ${broadcasterName} for ${duration}!`).then();
                     } else {
-                        reply(`You do not appear to be following ${broadcasterName} yet... maybe you'd like to start?`)
+                        reply(`You do not appear to be following ${broadcasterName} yet... maybe you'd like to start?`).then();
                     }
                 })
             }),
@@ -163,15 +181,19 @@ const postTwitchAuth = () => {
                     if (stream) {
                         const since = moment(stream.startDate)
                         const duration = since.diff(moment()).humanize()
-                        say(`${broadcasterName} has been streaming for ${duration}`)
+                        say(`${broadcasterName} has been streaming for ${duration}`).then();
                     } else {
-                        say(`${broadcasterName} is not currently streaming`)
+                        say(`${broadcasterName} is not currently streaming`).then();
                     }
-                })
+                }).then();
             }),
 
             // !deez
-            createBotCommand('deez', async (params, {say, reply}) => {
+            createBotCommand('deez', async (params, {msg, say, reply}) => {
+                if (!canIncrementCounter(msg)) {
+                    reply('You do not have permission to perform this action.').then();
+                    return;
+                }
                 counterDb.incrementCounter('gottem').then((counter) => {
                     let message
                     if (params.length) {
@@ -183,20 +205,28 @@ const postTwitchAuth = () => {
                     say(message)
                 }).catch((error) => {
                     console.error(error)
-                    reply('Something went wrong.  The error has been logged for Nyavarr')
+                    reply('Something went wrong.  The error has been logged for Nyavarr').then();
                 })
             }),
 
-            createBotCommand('bless', async (params, {say, reply}) => {
+            createBotCommand('bless', async (params, {msg, say, reply}) => {
+                if (!canIncrementCounter(msg)) {
+                    reply('You do not have permission to perform this action.').then();
+                    return;
+                }
                 counterDb.incrementCounter('sneeze').then((counter) => {
-                    say(`Bless you!  You must be a mess, sneezing ${counter.get()} times...`)
+                    say(`Bless you!  You must be a mess, sneezing ${counter.get()} times...`);
                 }).catch((err) => {
                     console.error(err);
                     reply('Something went wrong. The error has been logged for Nyavarr');
                 });
             }, {aliases: ['blessyou', 'sneeze']}),
 
-            createBotCommand('deer', async (params, {say, reply}) => {
+            createBotCommand('deer', async (params, {msg, say, reply}) => {
+                if (!canIncrementCounter(msg)) {
+                    reply('You do not have permission to perform this action.').then();
+                    return;
+                }
                 counterDb.incrementCounter('calleddeer').then((counter) => {
                     say(`Look what you've all done!  Nyavarr has been confused for a deer ${counter.get()} times!`)
                 }).catch((err) => {
@@ -206,7 +236,11 @@ const postTwitchAuth = () => {
             }),
 
             // !fast
-            createBotCommand('fast', async (params, {say, reply}) => {
+            createBotCommand('fast', async (params, {msg, say, reply}) => {
+                if (!canIncrementCounter(msg)) {
+                    reply('You do not have permission to perform this action.').then();
+                    return;
+                }
                 counterDb.incrementCounter('speed').then((counter) => {
                     say(`Are they fast or am I just slow? Probably the latter, since I've mentioned their speed ${counter.get()} times.`)
                 }).catch((error) => {
@@ -216,7 +250,11 @@ const postTwitchAuth = () => {
             }),
 
             // !curse
-            createBotCommand('curse', async (params, {say, reply}) => {
+            createBotCommand('curse', async (params, {msg, say, reply}) => {
+                if (!canIncrementCounter(msg)) {
+                    reply('You do not have permission to perform this action.').then();
+                    return;
+                }
                 try {
                     const cursesToday = (await counterDb.incrementCounter('cursesToday')).get()
                     const allCurses = (await counterDb.incrementCounter('allCurses')).get()
@@ -233,14 +271,18 @@ const postTwitchAuth = () => {
                 try {
                     const result = await fetch(`https://blackglasses.co/comission-command/navarr/pokepicker.php?name=${userName}`)
                     const pokemon = await result.text()
-                    reply(`Your partner Pokémon is... ${pokemon}`)
+                    reply(`Your partner Pokémon is... ${pokemon}`);
                 } catch (error) {
-                    reply(`I was unable to determine ${userDisplayName}'s partner at this time.`)
+                    reply(`I was unable to determine ${userDisplayName}'s partner at this time.`);
                 }
             }),
 
             // !beanboozled
-            createBotCommand('beanboozled', async (params, {say, reply}) => {
+            createBotCommand('beanboozled', async (params, {msg, say, reply}) => {
+                if (!canIncrementCounter(msg)) {
+                    reply('You do not have permission to perform this action.').then();
+                    return;
+                }
                 try {
                     const badbeans = (await counterDb.incrementCounter('badbean')).get()
 
@@ -252,7 +294,11 @@ const postTwitchAuth = () => {
             }, {aliases: ['badbean']}),
 
             // !notgirl
-            createBotCommand('notgirl', async (params, {say, reply}) => {
+            createBotCommand('notgirl', async (params, {msg, say, reply}) => {
+                if (!canIncrementCounter(msg)) {
+                    reply('You do not have permission to perform this action.').then();
+                    return;
+                }
                 try {
                     const notGirlCount = (await counterDb.incrementCounter('notgirl')).get()
 
