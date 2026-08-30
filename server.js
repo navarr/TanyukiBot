@@ -23,7 +23,7 @@ const clientSecret = process.env.TWITCH_CLIENT_SECRET
 
 const authProvider = new RefreshingAuthProvider({clientId, clientSecret})
 authProvider.onRefresh(async (userId, newTokenData) => {
-    await fs.writeFile(
+    fs.writeFile(
         `./tokens.${userId}.json`,
         JSON.stringify(newTokenData, null, 4),
         () => {
@@ -36,15 +36,7 @@ const database = new Database('./database.db', (err) => {
     if (err) throw err
 })
 
-/**
- * @param min {int} Minimum number to return
- * @param max {int} Maximum number to return
- */
-const getRandomNumber = function(min, max) {
-    return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-const getRandomArrayKey = function(arr) {
+const getRandomArrayKey = function (arr) {
     return Math.floor(Math.random() * arr.length);
 }
 
@@ -65,8 +57,6 @@ const availableTreatsList = [
     'Kenpi',
 ];
 
-const availableTreatCount = {};
-
 const pronounProvider = new PronounDatabase()
 const counterDb = new CounterDatabase(database)
 const quoteDb = new QuoteDatabase(database)
@@ -75,7 +65,7 @@ const treatStreakDb = new TreatStreakDb(database, counterDb)
 
 // Configure moment
 moment.relativeTimeThreshold('y', 365);
-moment.relativeTimeThreshold('M', 12);
+moment.relativeTimeThreshold('M', 9999);
 
 // Reset Daily Counters
 const resetDailyCounters = async () => {
@@ -107,12 +97,13 @@ function canPerformModAction(msg) {
 
 const postTwitchAuth = () => {
     console.log('Twitch Authorized')
+
     const bot = new Bot({
         authProvider,
         channels: [process.env.TWITCH_CHANNEL_NAME],
         commands: [
             // !so
-            createBotCommand('so', async (params, {msg, broadcasterId, announce, reply, userId}) => {
+            createBotCommand('so', async (params, {msg, broadcasterId, announce, reply}) => {
                 if (canPerformModAction(msg)) {
                     shoutout(params[0], announce, reply, broadcasterId).then();
                 }
@@ -120,78 +111,78 @@ const postTwitchAuth = () => {
             }, {aliases: ['shoutout']}),
 
             // !lurk
-            createBotCommand('lurk', (params, {reply, userDisplayName}) => {
-                reply(`We are the watchers! Or the chrome-tab-muters because we have important things to do.  Either way, we appreciate you ${userDisplayName}.`).then();
+            createBotCommand('lurk', (params, {msg, userDisplayName}) => {
+                replyChat(`We are the watchers! Or the chrome-tab-muters because we have important things to do.  Either way, we appreciate you ${userDisplayName}.`, msg.id).then();
             }),
 
             // !discord
             createBotCommand('discord', (params, {say}) => {
-                say('Join our Discord for news about the stream!  https://discord.gg/W6g5r4Wf2E').then();
+                sendChat('Join our Discord for news about the stream!  https://discord.gg/W6g5r4Wf2E').then();
             }),
 
             // !pronouns
             createBotCommand('pronouns', (params, {say}) => {
-                say('Nyavarr uses he or they pronouns.  K uses she/her pronouns.  To get your pronouns in chat, use https://chrome.google.com/webstore/detail/twitch-chat-pronouns/agnfbjmjkdncblnkpkgoefbpogemfcii').then();
+                sendChat('Nyavarr uses he or they pronouns.  K uses she/her pronouns.  To get your pronouns in chat, use https://chrome.google.com/webstore/detail/twitch-chat-pronouns/agnfbjmjkdncblnkpkgoefbpogemfcii').then();
             }, {aliases: ['pronoun']}),
 
             // !raid
             createBotCommand('raid', (params, {say}) => {
-                say('nyavarDance nyavarDance nyavarDance FOXBOY RAID nyavarDance nyavarDance nyavarDance  The fox and his eepy nyavarEepy companions have arrived with PERKED EARS and PUFFY TAIL to chill in your lovely stream nyavarHeart').then();
-                say('Despite being the Eepiest 😴 The FOXBOY RAID has arrived with PERKED EARS 🦊 AND PUFFY TAIL to chill in your lovely stream ❤️❤️').then();
+                sendChat('nyavarDance nyavarDance nyavarDance FOXBOY RAID nyavarDance nyavarDance nyavarDance  The fox and his eepy nyavarEepy companions have arrived with PERKED EARS and PUFFY TAIL to chill in your lovely stream nyavarHeart').then();
+                sendChat('Despite being the Eepiest 😴 The FOXBOY RAID has arrived with PERKED EARS 🦊 AND PUFFY TAIL to chill in your lovely stream ❤️❤️').then();
             }, {aliases: ['raid']}),
 
             // !socials
             createBotCommand('socials', (params, {say}) => {
-                say('Follow me at: Discord: https://discord.gg/W6g5r4Wf2E | VODs, Clips, and More: https://linktr.ee/NavarrVT').then();
+                sendChat('Follow me at: Discord: https://discord.gg/W6g5r4Wf2E | VODs, Clips, and More: https://linktr.ee/NavarrVT').then();
             }, {aliases: ['social']}),
 
             // !foxtail
             createBotCommand('foxtail', (params, {say}) => {
-                say('Our goal is now in the form of FOX TAILS!  Support the stream and help achieve the goal by subbing or gifting a sub (T1=1 tail, T2=2 tails, T3=6 tails) or with bits (250 = 1 tail) or TikTok coins (500 = 1 tail)!').then();
+                sendChat('Our goal is now in the form of FOX TAILS!  Support the stream and help achieve the goal by subbing or gifting a sub (T1=1 tail, T2=2 tails, T3=6 tails) or with bits (250 = 1 tail) or TikTok coins (500 = 1 tail)!').then();
             }, {aliases: ['foxtails']}),
 
             // !theguys
             createBotCommand('theguys', (params, {say}) => {
-                say('Please, allow me to introduce you to the fine gentleman joining me on Thursdays: @npfund: Nick, an amazing colleague and coworker from a previous job.  @krabbby: Krabbby, a man of mystery who previously lead The Night\'s Watch (a MineZ Guild I founded) and @JediMasterGio: David, another amazing colleague and coworker from a previous job.').then();
+                sendChat('Please, allow me to introduce you to the fine gentleman joining me on Thursdays: @npfund: Nick, an amazing colleague and coworker from a previous job.  @krabbby: Krabbby, a man of mystery who previously lead The Night\'s Watch (a MineZ Guild I founded) and @JediMasterGio: David, another amazing colleague and coworker from a previous job.').then();
             }),
 
             // !team
             createBotCommand('team', (params, {say}) => {
-                say('We\'re part of 🦇 CREATURE FEATURE 🦇 - An Aggressively Pro-LGBTQIA+ and Marginalized Peoples Safe Space. Learn more at https://twitter.com/CFeatureTTV').then();
+                sendChat('We\'re part of 🦇 CREATURE FEATURE 🦇 - An Aggressively Pro-LGBTQIA+ and Marginalized Peoples Safe Space. Learn more at https://twitter.com/CFeatureTTV').then();
             }, {aliases: ['creaturefeature', 'creatures']}),
 
             // !followage
-            createBotCommand('followage', async (params, {broadcasterName, broadcasterId, userId, reply}) => {
+            createBotCommand('followage', async (params, {broadcasterName, broadcasterId, userId, msg}) => {
                 apiClient.asUser(process.env.BOT_USER_ID, async ctx => {
                     const {data: [follow]} = await ctx.channels.getChannelFollowers(broadcasterId, userId)
                     if (follow) {
                         const since = moment(follow.followDate)
                         const duration = moment.duration(moment().diff(since)).humanize()
-                        reply(`You have been following ${broadcasterName} for ${duration}!`).then();
+                        replyChat(`You have been following ${broadcasterName} for ${duration}!`, msg.id).then();
                     } else {
-                        reply(`You do not appear to be following ${broadcasterName} yet... maybe you'd like to start?`).then();
+                        replyChat(`You do not appear to be following ${broadcasterName} yet... maybe you'd like to start?`, msg.id).then();
                     }
                 })
             }),
 
             // !uptime
-            createBotCommand('uptime', async (params, {broadcasterName, broadcasterId, say}) => {
+            createBotCommand('uptime', async (params, {broadcasterName, broadcasterId}) => {
                 apiClient.asUser(process.env.BOT_USER_ID, async ctx => {
                     const stream = await ctx.streams.getStreamByUserIdBatched(broadcasterId)
                     if (stream) {
                         const since = moment(stream.startDate)
-                        const duration = since.diff(moment()).humanize()
-                        say(`${broadcasterName} has been streaming for ${duration}`).then();
+                        const duration = moment.duration(moment().diff(since)).humanize();
+                        sendChat(`${broadcasterName} has been streaming for ${duration}`).then();
                     } else {
-                        say(`${broadcasterName} is not currently streaming`).then();
+                        sendChat(`${broadcasterName} is not currently streaming`).then();
                     }
                 }).then();
             }),
 
             // !deez
-            createBotCommand('deez', async (params, {msg, say, reply}) => {
+            createBotCommand('deez', async (params, {msg}) => {
                 if (!canIncrementCounter(msg)) {
-                    reply('You do not have permission to perform this action.').then();
+                    replyChat('You do not have permission to perform this action.', msg.id).then();
                     return;
                 }
                 counterDb.incrementCounter('gottem').then((counter) => {
@@ -202,281 +193,304 @@ const postTwitchAuth = () => {
                     } else {
                         message = `Haha, gottem. Number ${counter.get()}`
                     }
-                    say(message)
+                    sendChat(message)
                 }).catch((error) => {
                     console.error(error)
-                    reply('Something went wrong.  The error has been logged for Nyavarr').then();
+                    replyChat('Something went wrong.  The error has been logged for Nyavarr', msg.id).then();
                 })
             }),
 
-            createBotCommand('bless', async (params, {msg, say, reply}) => {
+            createBotCommand('bless', async (params, {msg}) => {
                 if (!canIncrementCounter(msg)) {
-                    reply('You do not have permission to perform this action.').then();
+                    replyChat('You do not have permission to perform this action.', msg.id).then();
                     return;
                 }
                 counterDb.incrementCounter('sneeze').then((counter) => {
-                    say(`Bless you!  You must be a mess, sneezing ${counter.get()} times...`);
+                    sendChat(`Bless you!  You must be a mess, sneezing ${counter.get()} times...`);
                 }).catch((err) => {
                     console.error(err);
-                    reply('Something went wrong. The error has been logged for Nyavarr');
+                    replyChat('Something went wrong. The error has been logged for Nyavarr', msg.id);
                 });
             }, {aliases: ['blessyou', 'sneeze']}),
 
-            createBotCommand('deer', async (params, {msg, say, reply}) => {
+            createBotCommand('deer', async (params, {msg}) => {
                 if (!canIncrementCounter(msg)) {
-                    reply('You do not have permission to perform this action.').then();
+                    replyChat('You do not have permission to perform this action.', msg.id).then();
                     return;
                 }
                 counterDb.incrementCounter('calleddeer').then((counter) => {
-                    say(`Look what you've all done!  Nyavarr has been confused for a deer ${counter.get()} times!`)
+                    sendChat(`Look what you've all done!  Nyavarr has been confused for a deer ${counter.get()} times!`)
                 }).catch((err) => {
                     console.error(err);
-                    reply('Something went wrong. The error has been logged for Nyavarr');
+                    replyChat('Something went wrong. The error has been logged for Nyavarr', msg.id);
                 })
             }),
 
             // !fast
-            createBotCommand('fast', async (params, {msg, say, reply}) => {
+            createBotCommand('fast', async (params, {msg}) => {
                 if (!canIncrementCounter(msg)) {
-                    reply('You do not have permission to perform this action.').then();
+                    replyChat('You do not have permission to perform this action.', msg.id).then();
                     return;
                 }
                 counterDb.incrementCounter('speed').then((counter) => {
-                    say(`Are they fast or am I just slow? Probably the latter, since I've mentioned their speed ${counter.get()} times.`)
+                    sendChat(`Are they fast or am I just slow? Probably the latter, since I've mentioned their speed ${counter.get()} times.`)
                 }).catch((error) => {
                     console.error(error)
-                    reply('Something went wrong. The error has been logged for Nyavarr')
+                    replyChat('Something went wrong. The error has been logged for Nyavarr', msg.id)
                 })
             }),
 
             // !curse
-            createBotCommand('curse', async (params, {msg, say, reply}) => {
+            createBotCommand('curse', async (params, {msg}) => {
                 if (!canIncrementCounter(msg)) {
-                    reply('You do not have permission to perform this action.').then();
+                    replyChat('You do not have permission to perform this action.', msg.id).then();
                     return;
                 }
                 try {
                     const cursesToday = (await counterDb.incrementCounter('cursesToday')).get()
                     const allCurses = (await counterDb.incrementCounter('allCurses')).get()
 
-                    await say(`Quite the sailor's mouth, eh?  That's ${cursesToday} ${cursesToday === 1 ? 'curse' : 'curses'} this stream and ${allCurses} since we started counting!`)
+                    await sendChat(`Quite the sailor's mouth, eh?  That's ${cursesToday} ${cursesToday === 1 ? 'curse' : 'curses'} this stream and ${allCurses} since we started counting!`)
                 } catch (error) {
                     console.error(error)
-                    await reply('Something went wrong. The error has been logged for Nyavarr')
+                    await replyChat('Something went wrong. The error has been logged for Nyavarr', msg.id)
                 }
             }, {aliases: ['language', 'swear', 'swearjar']}),
 
             // !partner
-            createBotCommand('partner', async (params, {userName, userDisplayName, say, reply}) => {
+            createBotCommand('partner', async (params, {userName, userDisplayName, msg}) => {
                 try {
                     const result = await fetch(`https://blackglasses.co/comission-command/navarr/pokepicker.php?name=${userName}`)
                     const pokemon = await result.text()
-                    reply(`Your partner Pokémon is... ${pokemon}`);
+                    replyChat(`Your partner Pokémon is... ${pokemon}`, msg.id);
                 } catch (error) {
-                    reply(`I was unable to determine ${userDisplayName}'s partner at this time.`);
+                    replyChat(`I was unable to determine ${userDisplayName}'s partner at this time.`, msg.id);
                 }
             }),
 
             // !beanboozled
-            createBotCommand('beanboozled', async (params, {msg, say, reply}) => {
+            createBotCommand('beanboozled', async (params, {msg}) => {
                 if (!canIncrementCounter(msg)) {
-                    reply('You do not have permission to perform this action.').then();
+                    replyChat('You do not have permission to perform this action.', msg.id).then();
                     return;
                 }
                 try {
                     const badbeans = (await counterDb.incrementCounter('badbean')).get()
 
-                    say(`Hey Bean, you just got BOOZLED.  Beanboozled. Haha. ${badbeans} bad beans!`)
+                    sayChat(`Hey Bean, you just got BOOZLED.  Beanboozled. Haha. ${badbeans} bad beans!`)
                 } catch (error) {
                     console.error(error)
-                    reply('Something went wrong. The error has been logged for Nyavarr')
+                    replyChat('Something went wrong. The error has been logged for Nyavarr', msg.id)
                 }
             }, {aliases: ['badbean']}),
 
             // !notgirl
-            createBotCommand('notgirl', async (params, {msg, say, reply}) => {
+            createBotCommand('notgirl', async (params, {msg}) => {
                 if (!canIncrementCounter(msg)) {
-                    reply('You do not have permission to perform this action.').then();
+                    replyChat('You do not have permission to perform this action.', msg.id).then();
                     return;
                 }
                 try {
                     const notGirlCount = (await counterDb.incrementCounter('notgirl')).get()
 
-                    say(`Nyavarr has apparently been confused for a girl ${notGirlCount} times since we started counting`)
+                    sendChat(`Nyavarr has apparently been confused for a girl ${notGirlCount} times since we started counting`)
                 } catch (error) {
                     console.error(error)
-                    reply('Something went wrong. The error has been logged for Nyavarr')
+                    replyChat('Something went wrong. The error has been logged for Nyavarr', msg.id)
                 }
             }, {aliases: ['notagirl', 'girl']}),
 
             // !quote
-            createBotCommand('quote', async (params, {say, reply}) => {
+            createBotCommand('quote', async (params, {msg}) => {
                 if (params.length === 0) {
                     try {
                         const quote = await quoteDb.getRandom()
                         if (quote) {
-                            reply(`Quote #${quote.getId()}: ${quote.getQuote()}`)
+                            replyChat(`Quote #${quote.getId()}: ${quote.getQuote()}`, msg.id)
                         } else {
-                            reply('There exist no quotes at all (probably)!')
+                            replyChat('There exist no quotes at all (probably)!', msg.id)
                         }
                     } catch (error) {
                         console.error(error)
-                        reply('Something went wrong. The error has been logged for Nyavarr')
+                        replyChat('Something went wrong. The error has been logged for Nyavarr', msg.id)
                     }
                     return
                 }
                 if (params.length > 1) {
-                    reply('Are you trying to create a quote?  Use !addquote for that')
+                    replyChat('Are you trying to create a quote?  Use !addquote for that', msg.id)
                     return
                 }
                 // Get Quote by Id
                 try {
                     const quote = await quoteDb.get(params[0])
                     if (quote) {
-                        reply(`Quote #${quote.getId()}: ${quote.getQuote()}`)
+                        replyChat(`Quote #${quote.getId()}: ${quote.getQuote()}`, msg.id)
                     } else {
-                        reply('No such quote.')
+                        replyChat('No such quote.', msg.id)
                     }
                 } catch (error) {
                     console.error(error)
-                    reply('Something went wrong. The error has been logged for Nyavarr')
+                    replyChat('Something went wrong. The error has been logged for Nyavarr', msg.id)
                 }
             }),
 
             // !addquote
-            createBotCommand('addquote', async (params, {reply}) => {
+            createBotCommand('addquote', async (params, {msg}) => {
                 if (params.length === 0) {
-                    reply('You uh.. forgot to include the quote.')
+                    replyChat('You uh.. forgot to include the quote.', msg.id)
                     return
                 }
                 let quoteText = params.join(' ')
                 try {
                     const newQuote = await quoteDb.create(quoteText)
                     if (newQuote) {
-                        reply(`Created quote #${newQuote.getId()}`)
+                        replyChat(`Created quote #${newQuote.getId()}`, msg.id)
                     } else {
-                        reply(`There may have been a problem creating the quote.  Honestly, not sure what happened`)
+                        replyChat(`There may have been a problem creating the quote.  Honestly, not sure what happened`, msg.id)
                     }
                 } catch (error) {
                     console.error(error)
-                    reply('Something went wrong. The error has been logged for Nyavarr')
+                    replyChat('Something went wrong. The error has been logged for Nyavarr', msg.id)
                 }
             }),
 
-            // createBotCommand('charity', async (params, {say}) => {
-            //     say('Support Stream for a Cause with us at https://charity.nyavarr.com/')
-            // }, {aliases: ['donate', 'trevorproject', 'trevor', 'sfac', 'fnof']}),
+            createBotCommand('charity', async (params, {}) => {
+                sayChat('Support Stream for a Cause with us at https://charity.nyavarr.com/')
+            }, {aliases: ['donate', 'trevorproject', 'trevor', 'sfac', 'fnof']}),
 
-            createBotCommand('vrchat', async (params, {reply}) => {
-                reply('Join my VRChat group!  NYAVAR.2175 (or use the link) https://vrc.group/NYAVAR.2175')
+            createBotCommand('vrchat', async (params, {msg}) => {
+                replyChat('Join my VRChat group!  NYAVAR.2175 (or use the link) https://vrc.group/NYAVAR.2175', msg.id)
             }, {aliases: ['group']}),
 
             // !throne
-            createBotCommand('throne', async (params, {say, reply}) => {
-                say('Nyavarr has a throne including the ability to leave anonymous and surprise gifts. https://throne.me/navarr')
+            createBotCommand('throne', async (params, {}) => {
+                sendChat('Nyavarr has a throne including the ability to leave anonymous and surprise gifts. https://throne.me/navarr')
             }),
 
-            createBotCommand('credits', async (params, {reply}) => {
-                reply('You can find credits for everything used in stream at https://github.com/nyavarr/credits')
+            createBotCommand('credits', async (params, {msg}) => {
+                replyChat('You can find credits for everything used in stream at https://github.com/nyavarr/credits', msg.id)
             }, {aliases: ['credit']}),
 
-            createBotCommand('merch', async (params, {reply}) => {
-                reply('You\'re really considering buying some merch? nyavarShy You can find the storefront at https://shop.nyavarr.com/ - Post in the discord if you have more ideas!')
+            createBotCommand('merch', async (params, {msg}) => {
+                replyChat('You\'re really considering buying some merch? nyavarShy You can find the storefront at https://shop.nyavarr.com/ - Post in the discord if you have more ideas!', msg.id)
             }, {aliases: ['shop', 'store']}),
 
-            createBotCommand('bonkcount', async(params, {reply}) => {
+            createBotCommand('bonkcount', async (params, {msg, userId}) => {
                 const counterName = 'bonk';
                 Promise.all([
                     counterDb.getCounter(counterName),
-                    counterDb.getUserCounter(counterName, params.userId)
+                    counterDb.getUserCounter(counterName, userId)
                 ]).then(([allCounter, userCounter]) => {
                     const allCount = allCounter.get();
                     if (allCount === 0) {
-                        reply('Nyavarr has never been bonked.');
+                        replyChat('Nyavarr has never been bonked.', msg.id);
                         return;
                     }
                     const userCount = userCounter.get();
                     const allString = `Nyavarr has been bonked ${allCount} time${allCount > 1 ? 's' : ''}`;
                     const userString = userCount > 0 ? `, ${userCount} of them by you!` : '!';
-                    reply(allString + userString);
+                    replyChat(allString + userString, msg.id);
                 }).catch((e) => {
                     console.error(e);
-                    reply('I encountered an error grabbing the count.  Please try again later. The error has been logged.');
+                    replyChat('I encountered an error grabbing the count.  Please try again later. The error has been logged.', msg.id);
                 })
             }),
 
-            createBotCommand('deercount', async(params, {reply, userId}) => {
+            createBotCommand('deercount', async (params, {msg, userId}) => {
                 const counterName = 'deer';
                 Promise.all([
                     counterDb.getCounter(counterName),
-                    counterDb.getUserCounter(counterName, params.userId)
+                    counterDb.getUserCounter(counterName, userId)
                 ]).then(([allCounter, userCounter]) => {
                     const allCount = allCounter.get();
                     if (allCount === 0) {
-                        reply('Nyavarr has never been turned into a deer.');
+                        replyChat('Nyavarr has never been turned into a deer.', msg.id);
                         return;
                     }
                     const userCount = userCounter.get();
                     const allString = `Nyavarr has been turned into a deer ${allCount} time${allCount > 1 ? 's' : ''}`;
                     const userString = userCount > 0 ? `, ${userCount} of them by you!` : '!';
-                    reply(allString + userString);
+                    replyChat(allString + userString, msg.id);
                 }).catch((e) => {
                     console.error(e);
-                    reply('I encountered an error grabbing the count.  Please try again later. The error has been logged.');
+                    replyChat('I encountered an error grabbing the count.  Please try again later. The error has been logged.', msg.id);
                 })
             }),
 
-            createBotCommand('thrown', async(params, {reply}) => {
-                const counterName = 'throw';
+            createBotCommand('thrown', async (params, {msg, userId}) => {
+                const counterName = 'thrown';
                 Promise.all([
                     counterDb.getCounter(counterName),
-                    counterDb.getUserCounter(counterName, params.userId)
+                    counterDb.getUserCounter(counterName, userId)
                 ]).then(([allCounter, userCounter]) => {
                     const allCount = allCounter.get();
                     if (allCount === 0) {
-                        reply('Nyavarr has never had anything thrown at them.');
+                        replyChat('Nyavarr has never had anything thrown at them.', msg.id);
                         return;
                     }
                     const userCount = userCounter.get();
+                    console.log(userCount);
                     const allString = `Nyavarr has had ${allCount} thing${allCount > 1 ? 's' : ''} thrown at him`;
                     const userString = userCount > 0 ? `, ${userCount} of them by you!` : '!';
-                    reply(allString + userString);
+                    replyChat(allString + userString, msg.id);
                 }).catch((e) => {
                     console.error(e);
-                    reply('I encountered an error grabbing the count.  Please try again later. The error has been logged.');
+                    replyChat('I encountered an error grabbing the count.  Please try again later. The error has been logged.', msg.id);
                 })
             }),
 
-            createBotCommand('treats', async(params, {reply}) => {
+            createBotCommand('treats', async (params, {userId, msg}) => {
                 const counterName = 'daily';
                 Promise.all([
                     counterDb.getCounter(counterName),
-                    counterDb.getUserCounter(counterName, params.userId)
+                    counterDb.getUserCounter(counterName, userId)
                 ]).then(([allCounter, userCounter]) => {
                     const allCount = allCounter.get();
                     if (allCount === 0) {
-                        reply('Nobody has ever redeemed a daily treat nyavarTear');
+                        replyChat('Nobody has ever redeemed a daily treat nyavarTear', msg.id);
                         return;
                     }
                     const userCount = userCounter.get();
-                    const allString = `${allCount} treat${allCount > 1 ? 's': ''} have been given out`;
+                    const allString = `${allCount} treat${allCount > 1 ? 's' : ''} have been given out`;
                     const userString = userCount > 0 ? `, ${userCount} of them to you!` : '!';
-                    reply(allString + userString);
+                    replyChat(allString + userString, msg.id);
                 }).catch((e) => {
                     console.error(e);
-                    reply('I encountered an error grabbing the count. Please try again later. The error has been logged.');
+                    replyChat('I encountered an error grabbing the count. Please try again later. The error has been logged.', msg.id);
                 })
             }),
 
-            createBotCommand('kofi', async(params, {reply}) => {
-                reply('You can contribute via ko-fi at https://ko-fi.com/nyavarr - every little bit helps and I appreciate it!')
-            }, {aliases: ['ko-fi', 'tip']}),
-
-            createBotCommand('subathon', async(params, {reply}) => {
-                reply('Every $6 is 10 minutes on the clock, for a maximum 24 hours!  2x bonus for Ko-Fi (!kofi) contributions and twitch bits!')
-            }, {aliases: ['donothon', 'contribute']})
+            createBotCommand('kofi', async (params, {msg}) => {
+                replyChat('You can contribute via ko-fi at https://ko-fi.com/nyavarr - every little bit helps and I appreciate it!', msg.id)
+            }, {aliases: ['ko-fi', 'tip']})
         ]
     })
+
+    async function replyChat(message, replyToId = null) {
+        await sendChat(message, false, replyToId);
+    }
+
+    async function sendChat(message, forSourceOnly = false, replyToId = null) {
+        await apiClient.asUser(process.env.BOT_USER_ID, async ctx => {
+            try {
+                let params = {};
+                if (replyToId) {
+                    params.replyParentMessageId = replyToId;
+                }
+                params.forSourceOnly = forSourceOnly;
+
+                await ctx.chat.sendChatMessageAsApp(
+                    process.env.BOT_USER_ID,
+                    process.env.TWITCH_CHANNEL_ID,
+                    message,
+                    params
+                );
+            } catch (e) {
+                console.error(e);
+                await bot.say(process.env.TWITCH_CHANNEL_NAME, message)
+            }
+        });
+    }
 
     async function shoutout(soUserName, responseFunction, errorResponseFunction, broadcasterId) {
         soUserName = soUserName.toLowerCase().replace('@', '')
@@ -528,7 +542,7 @@ const postTwitchAuth = () => {
                 bot.announce(broadcasterName, message).then();
             },
             (message) => {
-                bot.say(broadcasterName, `${message} (This.. shouldn't be possible)`, {}).then();
+                sendChat( `${message} (This.. shouldn't be possible)`, true).then();
             },
             broadcasterId
         ).then()
@@ -567,27 +581,27 @@ const postTwitchAuth = () => {
                         phrase.push(`(STREAK x${streakCounter.get()})`)
                     }
                     phrase.push('nyavarHeart nyavarHeart nyavarHeart');
-                    bot.say(process.env.TWITCH_CHANNEL_NAME, phrase.join(' '));
+                    sendChat(phrase.join(' '), true);
 
                     if (treatStreakDb.getStreakIfRepaired(event.userId)) {
                         const phrase = [
                             `@${event.userDisplayName}`,
                             `nyavarBehave Your streak is broken, but if you redeem "Streak Repair" we'll restore it to a x${treatStreakDb.getStreakIfRepaired(event.userId)} streak nyavarThinking`
                         ];
-                        bot.say(process.env.TWITCH_CHANNEL_NAME, phrase.join(' '));
+                        sendChat(phrase.join(' '), true);
                     }
 
                 }).catch((error) => {
                     console.error('Error Returned: ', error)
-                    bot.say(process.env.TWITCH_CHANNEL_NAME, 'Something went wrong redeeming your treat.  I\'m sorry nyavarTear');
+                    sendChat('Something went wrong redeeming your treat.  I\'m sorry nyavarTear', true);
                 });
             }
             if (event.rewardTitle === "Streak Repair") {
                 treatStreakDb.repairStreak(event.userId).then((streakCounter) => {
                     if (streakCounter === false) {
-                        bot.say(process.env.TWITCH_CHANNEL_NAME, 'Streak is not eligible for repair at this time.  Mods: Please refund the redeem');
+                        sendChat('Streak is not eligible for repair at this time.  Mods: Please refund the redeem', true);
                     } else {
-                        bot.say(process.env.TWITCH_CHANNEL_NAME, `@${event.userDisplayName} your streak has been repaired! nyavarHeadpats Thank you for your ${streakCounter.get()} stream loyalty! nyavarHeart`);
+                        sendChat(`@${event.userDisplayName} your streak has been repaired! nyavarHeadpats Thank you for your ${streakCounter.get()} stream loyalty! nyavarHeart`, true);
                     }
                 })
             }
@@ -604,10 +618,7 @@ const postTwitchAuth = () => {
                     if (streakCounter.get() > 1) {
                         unassembledText.push(`(STREAK: x${streakCounter.get()}!)`);
                     }
-                    bot.say(
-                        process.env.TWITCH_CHANNEL_NAME,
-                        unassembledText.join(' ')
-                    )
+                    sendChat(unassembledText.join(' '), true);
                 }).catch((error) => {
                     console.error(error)
                 })
@@ -657,7 +668,7 @@ const postTwitchAuth = () => {
         'I work hard to keep my Twitch Schedule up to date.  Take a look and see what the future holds: https://twitch.tv/nyavarr/schedule',
         'ABWAH! We have MERCH!  Go check it out at https://shop.nyavarr.com/',
         'We\'re part of 🦇 CREATURE FEATURE 🦇 - An Aggressively Pro-LGBTQIA+ and Marginalized Peoples Safe Space. Learn more at https://twitter.com/CFeatureTTV',
-        // 'This month we\'re supporting STREAM FOR A CAUSE!  Donate to them at https://charity.nyavarr.com/'
+        'This month we\'re supporting THE TREVOR PROJECT!  Donate to them at https://charity.nyavarr.com/'
     ]
     let generalTimerInterval = null
     /** @type {number} The index of the next message to send. */
@@ -665,7 +676,9 @@ const postTwitchAuth = () => {
     twitchEventSubListener.onStreamOnline(process.env.TWITCH_CHANNEL_ID, async (event) => {
         console.debug('onStreamOnline')
 
-        treatStreakDb.updateLastStream().then().catch((error) => {console.error(error)});
+        treatStreakDb.updateLastStream().then().catch((error) => {
+            console.error(error)
+        });
 
         // Timed Messages
         clearInterval(generalTimerInterval)
@@ -702,7 +715,18 @@ const postTwitchAuth = () => {
             try {
                 const game = (await event.getStream()).gameName
                 const title = (await event.getStream()).title
-                await bot.announce(process.env.TWITCH_CHANNEL_NAME, `${event.broadcasterDisplayName} is now live streaming ${game}: ${title}`);
+                await apiClient.asUser(process.env.BOT_USER_ID, async ctx => {
+                    try {
+                        await ctx.chat.sendAnnouncement(
+                            process.env.TWITCH_CHANNEL_ID,
+                            {
+                                message: `Nyavarr is now live streaming ${game}: ${title}`,
+                            }
+                        )
+                    } catch (e) {
+                        console.error('Recoverable Error', e);
+                    }
+                })
             } catch (e) {
                 console.error('Recoverable Error', e)
             }
@@ -712,14 +736,25 @@ const postTwitchAuth = () => {
         await resetDailyCounters()
     })
 
-    twitchEventSubListener.onStreamOffline(process.env.TWITCH_CHANNEL_ID, (event) => {
+    twitchEventSubListener.onStreamOffline(process.env.TWITCH_CHANNEL_ID, () => {
         console.debug('onStreamOffline')
         clearInterval(generalTimerInterval)
     })
 
     twitchEventSubListener.onChannelRaidFrom(process.env.TWITCH_CHANNEL_ID, (event) => {
         console.debug('onChannelRaidTo')
-        bot.announce(process.env.TWITCH_CHANNEL_NAME, `${event.raidingBroadcasterDisplayName} has raided out to ${event.raidedBroadcasterDisplayName}!  Did you miss it?  Join at https://twitch.tv/${event.raidedBroadcasterName}`)
+        apiClient.asUser(process.env.BOT_USER_ID, async ctx => {
+            try {
+                await ctx.chat.sendAnnouncement(
+                    process.env.TWITCH_CHANNEL_ID,
+                    {
+                        message: `${event.raidingBroadcasterDisplayName} has raided out to ${event.raidedBroadcasterDisplayName}!  Did you miss it?  Join at https://twitch.tv/${event.raidedBroadcasterName}`
+                    }
+                )
+            } catch (e) {
+                console.error('Recoverable Error', e);
+            }
+        })
     })
 }
 
